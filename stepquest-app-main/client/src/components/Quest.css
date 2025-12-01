@@ -1,0 +1,15 @@
+.quest-difficulty {
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 1px 1px #000;
+}
+
+.quest-card {
+  position: relative;
+}
+
+.card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}

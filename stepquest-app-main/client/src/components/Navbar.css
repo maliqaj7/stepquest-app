@@ -1,0 +1,30 @@
+.pixel-navbar {
+  background: #1a1a1a;
+  border-bottom: 3px solid #3a3a3a;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "Press Start 2P", monospace;
+}
+
+.pixel-logo {
+  color: #ffd54a;
+  font-size: 0.9rem;
+}
+
+.pixel-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.pixel-link {
+  color: #dcdcdc;
+  font-size: 0.7rem;
+  text-decoration: none;
+}
+
+.pixel-link.active {
+  color: #4af5ff;
+  text-shadow: 0 0 6px #4af5ff;
+}
