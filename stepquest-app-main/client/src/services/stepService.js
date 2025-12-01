@@ -1,15 +1,42 @@
-// src/services/stepService.js
+let lastAccel = { x: 0, y: 0, z: 0 };
+let lastStepTime = 0;
 
-// For now this is just a fake service.
-// Later you can replace this with Google Fit / Apple HealthKit calls.
+export function startStepTracking(onStep) {
+  // iOS permission check
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    DeviceMotionEvent.requestPermission()
+      .then(response => {
+        if (response === "granted") {
+          window.addEventListener("devicemotion", handleMotion(onStep));
+        } else {
+          alert("Motion tracking permission denied.");
+        }
+      })
+      .catch(() => alert("Motion tracking failed."));
+  } else {
+    // Android or desktop fallback
+    window.addEventListener("devicemotion", handleMotion(onStep));
+  }
+}
 
-export async function fetchNewSteps() {
-  // Imagine this is calling a real pedometer API.
-  // For the prototype, we just return a fixed number.
-  const simulatedSteps = 500;
+function handleMotion(onStep) {
+  return (event) => {
+    const accel = event.accelerationIncludingGravity;
+    if (!accel) return;
 
-  // You could randomise this a bit if you want:
-  // const simulatedSteps = 200 + Math.floor(Math.random() * 600);
+    const dx = accel.x - lastAccel.x;
+    const dy = accel.y - lastAccel.y;
+    const dz = accel.z - lastAccel.z;
 
-  return simulatedSteps;
+    const magnitude = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    const now = Date.now();
+
+    // Detect a REAL movement spike (fake steps solved)
+    if (magnitude > 1.2 && now - lastStepTime > 600) {
+      lastStepTime = now;
+      onStep(1);
+    }
+
+    lastAccel = accel;
+  };
 }

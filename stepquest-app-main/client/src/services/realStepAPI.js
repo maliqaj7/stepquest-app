@@ -1,42 +1,53 @@
 let lastAccel = { x: 0, y: 0, z: 0 };
-let stepCount = 0;
-let threshold = 1.2; // Adjust if sensitivity is too high/low
+let lastStepTime = 0;
+let listenerActive = false;
 
-export function startStepTracking(callback) {
-  if (typeof DeviceMotionEvent === "undefined") {
-    console.warn("DeviceMotion is not supported.");
-    return;
-  }
+export function startStepTracking(onStep) {
+  if (listenerActive) return;                 // prevent DOUBLE registration
+  listenerActive = true;
 
-  // iPhone permission
+  const handler = createMotionHandler(onStep);
+
+  // iOS permission flow
   if (typeof DeviceMotionEvent.requestPermission === "function") {
-    DeviceMotionEvent.requestPermission().then((response) => {
-      if (response === "granted") {
-        window.addEventListener("devicemotion", (event) =>
-          handleStep(event, callback)
-        );
-      }
-    });
-  } else {
-    // Android
-    window.addEventListener("devicemotion", (event) =>
-      handleStep(event, callback)
-    );
+    DeviceMotionEvent.requestPermission()
+      .then((res) => {
+        if (res === "granted") {
+          window.addEventListener("devicemotion", handler);
+        } else {
+          alert("Motion permission denied.");
+        }
+      })
+      .catch(() => alert("Motion permission error."));
+  } 
+  else {
+    // Android / desktop accelerometer
+    window.addEventListener("devicemotion", handler);
   }
 }
 
-function handleStep(event, callback) {
-  const { x, y, z } = event.accelerationIncludingGravity;
+function createMotionHandler(onStep) {
+  return (event) => {
+    const accel = event.accelerationIncludingGravity;
+    if (!accel) return;
 
-  const diff =
-    Math.abs(x - lastAccel.x) +
-    Math.abs(y - lastAccel.y) +
-    Math.abs(z - lastAccel.z);
+    // Calculate magnitude of motion change
+    const dx = accel.x - lastAccel.x;
+    const dy = accel.y - lastAccel.y;
+    const dz = accel.z - lastAccel.z;
+    const magnitude = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-  if (diff > threshold) {
-    stepCount++;
-    callback(stepCount); // Sends step count to Home
-  }
+    lastAccel = accel;
 
-  lastAccel = { x, y, z };
+    const now = Date.now();
+
+    // -------- REAL STEP DETECTION FILTERS --------
+    
+    if (magnitude < 2.4) return;        // ignore tiny movements  
+    if (now - lastStepTime < 900) return;  // ignore rapid duplicates  
+
+    lastStepTime = now;
+
+    onStep(1);  // count one real step
+  };
 }

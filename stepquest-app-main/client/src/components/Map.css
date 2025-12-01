@@ -1,0 +1,18 @@
+.map-knight-marker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.map-knight-icon {
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.map-knight-text {
+  font-size: 0.7rem;
+  color: #ffd54a;
+  text-shadow: 2px 2px #000;
+}

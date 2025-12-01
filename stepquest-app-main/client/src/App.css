@@ -280,3 +280,11 @@
   color: #ffd54a;
 }
 
+.xp-fill {
+  height: 10px;
+  background: #4ade80;
+  border-radius: 4px;
+  transition: width 0.4s ease-out; 
+}
+
+

@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuest } from "../context/QuestContext";
-import { fetchNewSteps } from "../services/stepService";
 import { startStepTracking } from "../services/realStepAPI";
 import { useNavigate } from "react-router-dom";
+import { useAchievements } from "../context/Achievement";
 import { useInventory } from "../context/InventoryContext";
+
 import knightImg from "../assets/knight.png";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { addItem } = useInventory();
   const knightRef = useRef(null);
 
-  // Quest context
   const { activeQuest, totalSteps, setTotalSteps } = useQuest();
+  const { addItem } = useInventory();
+  const { unlock } = useAchievements();
 
-  // Local state
+  // Local UI state
   const [stepsToday, setStepsToday] = useState(0);
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
@@ -24,29 +25,29 @@ export default function Home() {
   const [questRewardGiven, setQuestRewardGiven] = useState(false);
 
   /* -----------------------------
-      LOOT TABLE (RPG Items)
+      LOOT TABLE
   ------------------------------*/
   const LOOT_TABLE = [
-    { name: "Traveler Boots", rarity: "Uncommon", icon: "🥾", stats: { spd: 1 }, description: "+1 SPD. Light boots for long journeys." },
-    { name: "Bronze Sword", rarity: "Common", icon: "🗡️", stats: { atk: 1 }, description: "+1 ATK. A basic but reliable blade." },
-    { name: "Guardian Shield", rarity: "Rare", icon: "🛡️", stats: { def: 2 }, description: "+2 DEF. Protects against harsh quests." },
-    { name: "Crystal Amulet", rarity: "Epic", icon: "🔮", stats: { luck: 2 }, description: "+2 LUCK. Increases chance of rare finds." },
-    { name: "Endless Cloak", rarity: "Legendary", icon: "🧥", stats: { end: 3 }, description: "+3 END. Walk further without tiring." },
-    { name: "Mythic Sun Relic", rarity: "Mythic", icon: "☀️", stats: { atk: 2, def: 2, spd: 2, luck: 2, end: 2 }, description: "+2 to all stats." }
+    { name: "Traveler Boots", rarity: "Uncommon", icon: "🥾", stats: { spd: 1 } },
+    { name: "Bronze Sword", rarity: "Common", icon: "🗡️", stats: { atk: 1 } },
+    { name: "Guardian Shield", rarity: "Rare", icon: "🛡️", stats: { def: 2 } },
+    { name: "Crystal Amulet", rarity: "Epic", icon: "🔮", stats: { luck: 2 } },
+    { name: "Endless Cloak", rarity: "Legendary", icon: "🧥", stats: { end: 3 } },
+    { name: "Mythic Sun Relic", rarity: "Mythic", icon: "☀️", stats: { atk: 2, def: 2, spd: 2, luck: 2, end: 2 } }
   ];
 
   const rollLoot = () => {
-    const roll = Math.random();
-    if (roll < 0.5) return LOOT_TABLE[0];
-    if (roll < 0.75) return LOOT_TABLE[1];
-    if (roll < 0.88) return LOOT_TABLE[2];
-    if (roll < 0.96) return LOOT_TABLE[3];
-    if (roll < 0.99) return LOOT_TABLE[4];
+    const r = Math.random();
+    if (r < 0.5) return LOOT_TABLE[0];
+    if (r < 0.75) return LOOT_TABLE[1];
+    if (r < 0.88) return LOOT_TABLE[2];
+    if (r < 0.96) return LOOT_TABLE[3];
+    if (r < 0.99) return LOOT_TABLE[4];
     return LOOT_TABLE[5];
   };
 
   /* -----------------------------
-      RESET QUEST WHEN CHANGED
+      RESET QUEST WHEN SWITCHED
   ------------------------------*/
   useEffect(() => {
     if (activeQuest) {
@@ -57,65 +58,72 @@ export default function Home() {
   }, [activeQuest]);
 
   /* -----------------------------
-      REAL STEP TRACKING FIXED
+      STEP TRACKING (REAL)
   ------------------------------*/
   useEffect(() => {
-    startStepTracking((actualSteps) => {
-      // Increase today’s steps properly
-      setStepsToday((prev) => prev + actualSteps);
+    startStepTracking((steps) => {
+      if (steps <= 0) return;
 
-      // Increase world steps properly
-      setTotalSteps((prev) => prev + actualSteps);
-
-      // Apply XP
-      handleStepGain(actualSteps);
+      setStepsToday(prev => prev + steps);
+      setTotalSteps(prev => prev + steps);
+      handleStepGain(steps);
     });
   }, []);
 
+  /* -----------------------------
+      MAIN LOGIC FOR STEP GAINS
+  ------------------------------*/
+  const handleStepGain = (amount) => {
+    const newTotal = totalSteps + amount;
+    const questGoal = Number(activeQuest?.steps || 0); // FIXED
 
-  const handleStepGain = (stepAmount) => {
-    const addedXp = Math.round(stepAmount * 0.1); // scalable XP
-
-    // Knight walk animation
+    // Knight animation
     if (knightRef.current) {
       knightRef.current.classList.add("knight-walk");
       setTimeout(() => knightRef.current.classList.remove("knight-walk"), 300);
     }
 
-    // XP logic
-    setXp((prevXp) => {
-      const xpNeeded = level * 100;
-      const total = prevXp + addedXp;
+    /* XP SYSTEM */
+    setXp(prev => {
+      const needed = level * 100;
+      const updated = prev + Math.round(amount * 0.1);
 
-      if (total >= xpNeeded) {
-        setLevel((prev) => prev + 1);
-        return total - xpNeeded;
+      if (updated >= needed) {
+        setLevel(prevLevel => prevLevel + 1);
+        return updated - needed;
       }
-      return total;
+      return updated;
     });
 
-    // Quest logic
+    /* QUEST SYSTEM */
     if (activeQuest && !questCompleted) {
-      setQuestProgress((prev) => {
-        const newProgress = prev + stepAmount;
-        if (newProgress >= activeQuest.steps) {
+      setQuestProgress(prev => {
+        const updated = prev + amount;
+
+        if (updated >= questGoal && !questRewardGiven) {
           setQuestCompleted(true);
+          setQuestRewardGiven(true);
 
-          if (!questRewardGiven) {
-            setQuestRewardGiven(true);
+          alert(`🎉 Quest Complete: ${activeQuest.title}`);
 
-            alert(`🎉 Quest Complete: ${activeQuest.title}`);
-
-            // Grant quest XP
-            setXp((prevXp) => prevXp + 100);
-          }
+          setXp(prev => prev + 100);
         }
-        return Math.min(newProgress, activeQuest.steps);
+
+        return Math.min(updated, questGoal);
       });
     }
 
-    // Loot drop
-    if (Math.random() < 0.35) {
+    /* ACHIEVEMENTS */
+    if (newTotal >= 100) unlock("first100", "First Steps", "Walked 100 total steps!");
+    if (newTotal >= 1000) unlock("stepRookie", "Step Rookie", "Walked 1,000 total steps!");
+    if (newTotal >= 10000) unlock("stepWarrior", "Step Warrior", "Walked 10,000 total steps!");
+
+    /* LOOT SYSTEM */
+    const LOOT_STEP_INTERVAL = 50;
+    const guaranteedDrop = newTotal % LOOT_STEP_INTERVAL === 0;
+    const randomDrop = Math.random() < 0.05;
+
+    if (guaranteedDrop || randomDrop) {
       const item = rollLoot();
       addItem(item);
       alert(`🎒 Loot Found!\n${item.name} (${item.rarity})`);
@@ -123,39 +131,40 @@ export default function Home() {
   };
 
   /* -----------------------------
-      SIMULATION BUTTON -> Uses same logic
+      UI VALUES
   ------------------------------*/
-  const simulateSteps = async () => {
-    const fakeSteps = await fetchNewSteps();
-    handleStepGain(fakeSteps);
-  };
+  const xpToNext = level * 100;
+  const xpPercent = Math.round((xp / xpToNext) * 100);
 
-  const xpToNextLevel = level * 100;
-  const xpPercent = Math.min(100, Math.round((xp / xpToNextLevel) * 100));
-  const questPercent = activeQuest ? Math.min(100, Math.round((questProgress / activeQuest.steps) * 100)) : 0;
+  const questGoal = Number(activeQuest?.steps || 0); // FIX for UI
+  const questPercent = activeQuest
+    ? Math.round((questProgress / questGoal) * 100)
+    : 0;
 
   return (
     <div className="page">
       <h1 className="page-title">StepQuest Dashboard</h1>
 
-      {/* Knight UI */}
+      {/* Knight */}
       <div className="knight-container">
-        <img ref={knightRef} src={knightImg} alt="Knight" className="knight-sprite" />
+        <img ref={knightRef} src={knightImg} className="knight-sprite" />
         <div className="knight-info">
           <p className="knight-level">LVL {level}</p>
           <p className="knight-title">Wanderer of the Unknown</p>
         </div>
       </div>
 
-      {/* Inventory button */}
-      <button className="inventory-btn" onClick={() => navigate("/inventory")}>🎒</button>
+      {/* Inventory */}
+      <button className="inventory-btn" onClick={() => navigate("/inventory")}>
+        🎒
+      </button>
 
-      {/* Stats Card */}
+      {/* Stats */}
       <div className="card">
         <p className="stat">Steps Today: <span className="stat-highlight">{stepsToday}</span></p>
         <p className="stat">Total Steps: <span className="stat-highlight">{totalSteps}</span></p>
         <p className="stat">Level: <span className="stat-highlight">{level}</span></p>
-        <p className="stat">XP: {xp} / {xpToNextLevel}</p>
+        <p className="stat">XP: {xp} / {xpToNext}</p>
 
         <div className="xp-bar">
           <div className="xp-fill" style={{ width: `${xpPercent}%` }} />
@@ -168,17 +177,17 @@ export default function Home() {
         {activeQuest && (
           <>
             <h2 className="card-title">{activeQuest.title}</h2>
-            <p className="stat">Progress: {questProgress} / {activeQuest.steps}</p>
+            <p className="stat">
+              Progress: {questProgress} / {questGoal}
+            </p>
+
             <div className="quest-bar">
               <div className="quest-fill" style={{ width: `${questPercent}%` }} />
             </div>
+
             {questCompleted && <p>✅ Quest Completed!</p>}
           </>
         )}
-
-        <button className="btn-primary" onClick={simulateSteps}>
-          Simulate Steps
-        </button>
       </div>
     </div>
   );
