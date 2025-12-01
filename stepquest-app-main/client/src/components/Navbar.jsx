@@ -6,7 +6,6 @@ export default function Navbar() {
 
   return (
     <nav className="pixel-navbar">
-      {/* Logo clickable to return home */}
       <h2
         className="pixel-logo"
         onClick={() => navigate("/")}

@@ -72,9 +72,7 @@ export default function Home() {
     });
   }, []);
 
-  /* -----------------------------
-      XP, Loot, Quest Logic (Unified)
-  ------------------------------*/
+
   const handleStepGain = (stepAmount) => {
     const addedXp = Math.round(stepAmount * 0.1); // scalable XP
 

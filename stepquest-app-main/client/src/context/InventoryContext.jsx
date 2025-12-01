@@ -22,7 +22,7 @@ const RARITY_COLORS = {
   Rare: "#2196f3",
   Epic: "#9c27b0",
   Legendary: "#ff9800",
-  Mythic: "#ff1744", // Your old value had invalid hex; fixed
+  Mythic: "#ff1744", 
 };
 
 export function InventoryProvider({ children }) {
