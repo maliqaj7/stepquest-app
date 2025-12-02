@@ -1,8 +1,5 @@
+// src/App.jsx
 import "./App.css";
-
-import { QuestProvider } from "./context/QuestContext";
-import { InventoryProvider } from "./context/InventoryContext";
-import { AchievementProvider } from "./context/Achievement.jsx"; // ✅ FIXED
 
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -10,29 +7,81 @@ import Quests from "./pages/Quests";
 import Map from "./pages/Map";
 import InventoryPage from "./pages/InventoryPage";
 import AIQuestMaster from "./pages/AIQuestMaster";
+import Insights from "./pages/Insights";
 
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+
+import ProtectedRoute from "./components/ProtectedRoute";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext.jsx";
 
 function App() {
+  const { user } = useAuth(); // who is logged in (from Supabase)
+
   return (
-    <AchievementProvider> {/* ✅ Must wrap entire app */}
-      <QuestProvider>
-        <InventoryProvider>
-          <Router>
-            <Navbar />
-            <main className="content">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/quests" element={<Quests />} />
-                <Route path="/map" element={<Map />} />
-                <Route path="/inventory" element={<InventoryPage />} />
-                <Route path="/ai" element={<AIQuestMaster />} />
-              </Routes>
-            </main>
-          </Router>
-        </InventoryProvider>
-      </QuestProvider>
-    </AchievementProvider>
+    <Router>
+      {/* Show navbar only when logged in */}
+      {user && <Navbar />}
+
+      <main className="content">
+        <Routes>
+          {/* PUBLIC ROUTES */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* PROTECTED ROUTES (need to be logged in) */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quests"
+            element={
+              <ProtectedRoute>
+                <Quests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/map"
+            element={
+              <ProtectedRoute>
+                <Map />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <InventoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai"
+            element={
+              <ProtectedRoute>
+                <AIQuestMaster />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/insights"
+            element={
+              <ProtectedRoute>
+                <Insights />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </main>
+    </Router>
   );
 }
 

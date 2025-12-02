@@ -1,6 +1,7 @@
+// src/context/InventoryContext.jsx
 import { createContext, useContext, useState, useMemo } from "react";
 
-const InventoryContext = createContext();
+const InventoryContext = createContext(null);
 
 /* ============================================
    BASE PLAYER STATS — Before equipment bonuses
@@ -22,45 +23,34 @@ const RARITY_COLORS = {
   Rare: "#2196f3",
   Epic: "#9c27b0",
   Legendary: "#ff9800",
-  Mythic: "#ff1744", 
+  Mythic: "#ff1744",
 };
 
 export function InventoryProvider({ children }) {
   const [inventory, setInventory] = useState([]);
 
-  /* ============================================
-     ADD ITEM — Handles deep copy & validation
-     ============================================ */
+  /* ADD ITEM — Handles deep copy & validation */
   const addItem = (item) => {
     if (!item || !item.name) {
       console.warn("Attempted to add invalid item:", item);
       return;
     }
 
-    // Always clone item object so React state stays clean
     const newItem = { ...item };
-
     setInventory((prev) => [...prev, newItem]);
   };
 
-  /* ============================================
-     REMOVE a specific item
-     ============================================ */
+  /* REMOVE a specific item */
   const removeItem = (index) => {
     setInventory((prev) => prev.filter((_, i) => i !== index));
   };
 
-  /* ============================================
-     CLEAR Inventory (for debugging / prestige)
-     ============================================ */
+  /* CLEAR Inventory */
   const clearInventory = () => {
     setInventory([]);
   };
 
-  /* ============================================
-     DERIVED PLAYER TOTAL STATS
-     Base stats + item bonuses
-     ============================================ */
+  /* BASE + ITEM BONUS STATS */
   const totalStats = useMemo(() => {
     const bonus = { atk: 0, def: 0, spd: 0, luck: 0, end: 0 };
 
@@ -74,7 +64,6 @@ export function InventoryProvider({ children }) {
       });
     });
 
-    // Final stats after bonuses
     return {
       atk: BASE_STATS.atk + bonus.atk,
       def: BASE_STATS.def + bonus.def,
@@ -100,9 +89,7 @@ export function InventoryProvider({ children }) {
   );
 }
 
-/* ============================================
-   USE INVENTORY HOOK
-   ============================================ */
+/* HOOK */
 export function useInventory() {
   return useContext(InventoryContext);
 }

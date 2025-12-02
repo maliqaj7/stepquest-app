@@ -4,8 +4,66 @@ import { startStepTracking } from "../services/realStepAPI";
 import { useNavigate } from "react-router-dom";
 import { useAchievements } from "../context/Achievement";
 import { useInventory } from "../context/InventoryContext";
+import { supabase } from "../supabaseClient";
+import { useAuth } from "../context/AuthContext";
 
-import knightImg from "../assets/knight.png";
+/* -----------------------------
+   PIXEL KNIGHT SPRITES
+   8×8 grid
+   "." = transparent
+   "1","2","3" = different colours
+------------------------------*/
+
+const BASE_PIXELS = [
+  "..1111..",
+  ".122221.",
+  ".122221.",
+  "..3333..",
+  "..3..3..",
+  ".3....3.",
+  ".3....3.",
+  "..3333..",
+];
+
+const HERO_SPRITES = {
+  tier1: {
+    title: "Apprentice Knight",
+    pixels: BASE_PIXELS,
+    colors: {
+      "1": "#f9fafb", // helmet edge
+      "2": "#facc15", // visor / face
+      "3": "#111827", // dark armour
+    },
+  },
+  tier2: {
+    title: "Elite Vanguard",
+    pixels: BASE_PIXELS,
+    colors: {
+      "1": "#e5e7eb",
+      "2": "#f97316", // warmer visor
+      "3": "#1d4ed8", // blue armour
+    },
+  },
+  tier3: {
+    title: "Dragon Knight",
+    pixels: BASE_PIXELS,
+    colors: {
+      "1": "#fef3c7",
+      "2": "#fbbf24", // bright gold visor
+      "3": "#7f1d1d", // crimson armour
+    },
+  },
+};
+
+// ✅ Uses BOTH level & totalSteps so the knight evolves
+const getHeroSprite = (level, totalSteps) => {
+  // late‑game / high progress
+  if (level >= 10 || totalSteps >= 10000) return HERO_SPRITES.tier3;
+  // mid‑game
+  if (level >= 5 || totalSteps >= 2000) return HERO_SPRITES.tier2;
+  // early game
+  return HERO_SPRITES.tier1;
+};
 
 export default function Home() {
   const navigate = useNavigate();
@@ -14,15 +72,96 @@ export default function Home() {
   const { activeQuest, totalSteps, setTotalSteps } = useQuest();
   const { addItem } = useInventory();
   const { unlock } = useAchievements();
+  const { user } = useAuth(); // 👈 current logged‑in Supabase user
 
   // Local UI state
   const [stepsToday, setStepsToday] = useState(0);
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
-
   const [questProgress, setQuestProgress] = useState(0);
   const [questCompleted, setQuestCompleted] = useState(false);
   const [questRewardGiven, setQuestRewardGiven] = useState(false);
+
+  // track when we've loaded from Supabase so we don't overwrite with zeros
+  const [statsLoaded, setStatsLoaded] = useState(false);
+
+  /* -----------------------------
+      LOAD STATS FROM SUPABASE
+  ------------------------------*/
+  useEffect(() => {
+    if (!user) return;
+
+    const loadStats = async () => {
+      const { data, error } = await supabase
+        .from("player_stats")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      // if it's a real error (not just "no row found")
+      if (error && error.code !== "PGRST116") {
+        console.error("Error loading stats:", error);
+        return;
+      }
+
+      if (data) {
+        // existing row – hydrate state
+        setStepsToday(data.steps_today ?? 0);
+        setTotalSteps(data.total_steps ?? 0);
+        setXp(data.xp ?? 0);
+        setLevel(data.level ?? 1);
+      } else {
+        // first time – create default row
+        const { error: insertError } = await supabase
+          .from("player_stats")
+          .insert({
+            user_id: user.id,
+            steps_today: 0,
+            total_steps: 0,
+            xp: 0,
+            level: 1,
+          });
+
+        if (insertError) {
+          console.error("Error creating stats row:", insertError);
+        }
+      }
+
+      setStatsLoaded(true);
+    };
+
+    loadStats();
+  }, [user, setTotalSteps]);
+
+  /* -----------------------------
+      HELPER TO SAVE STATS
+  ------------------------------*/
+  const saveStats = async (stats) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("player_stats")
+      .upsert({
+        user_id: user.id,
+        ...stats,
+      });
+
+    if (error) {
+      console.error("Error saving stats:", error);
+    }
+  };
+
+  // Whenever stats change (after initial load), sync to Supabase
+  useEffect(() => {
+    if (!user || !statsLoaded) return;
+
+    saveStats({
+      steps_today: stepsToday,
+      total_steps: totalSteps,
+      xp,
+      level,
+    });
+  }, [user, statsLoaded, stepsToday, totalSteps, xp, level]);
 
   /* -----------------------------
       LOOT TABLE
@@ -33,7 +172,12 @@ export default function Home() {
     { name: "Guardian Shield", rarity: "Rare", icon: "🛡️", stats: { def: 2 } },
     { name: "Crystal Amulet", rarity: "Epic", icon: "🔮", stats: { luck: 2 } },
     { name: "Endless Cloak", rarity: "Legendary", icon: "🧥", stats: { end: 3 } },
-    { name: "Mythic Sun Relic", rarity: "Mythic", icon: "☀️", stats: { atk: 2, def: 2, spd: 2, luck: 2, end: 2 } }
+    {
+      name: "Mythic Sun Relic",
+      rarity: "Mythic",
+      icon: "☀️",
+      stats: { atk: 2, def: 2, spd: 2, luck: 2, end: 2 },
+    },
   ];
 
   const rollLoot = () => {
@@ -64,8 +208,8 @@ export default function Home() {
     startStepTracking((steps) => {
       if (steps <= 0) return;
 
-      setStepsToday(prev => prev + steps);
-      setTotalSteps(prev => prev + steps);
+      setStepsToday((prev) => prev + steps);
+      setTotalSteps((prev) => prev + steps);
       handleStepGain(steps);
     });
   }, []);
@@ -75,21 +219,20 @@ export default function Home() {
   ------------------------------*/
   const handleStepGain = (amount) => {
     const newTotal = totalSteps + amount;
-    const questGoal = Number(activeQuest?.steps || 0); // FIXED
+    const questGoal = Number(activeQuest?.steps || 0);
 
-    // Knight animation
+    // Pixel knight "walk" animation
     if (knightRef.current) {
       knightRef.current.classList.add("knight-walk");
       setTimeout(() => knightRef.current.classList.remove("knight-walk"), 300);
     }
 
     /* XP SYSTEM */
-    setXp(prev => {
+    setXp((prev) => {
       const needed = level * 100;
       const updated = prev + Math.round(amount * 0.1);
-
       if (updated >= needed) {
-        setLevel(prevLevel => prevLevel + 1);
+        setLevel((prevLevel) => prevLevel + 1);
         return updated - needed;
       }
       return updated;
@@ -97,18 +240,14 @@ export default function Home() {
 
     /* QUEST SYSTEM */
     if (activeQuest && !questCompleted) {
-      setQuestProgress(prev => {
+      setQuestProgress((prev) => {
         const updated = prev + amount;
-
         if (updated >= questGoal && !questRewardGiven) {
           setQuestCompleted(true);
           setQuestRewardGiven(true);
-
           alert(`🎉 Quest Complete: ${activeQuest.title}`);
-
-          setXp(prev => prev + 100);
+          setXp((prevXp) => prevXp + 100);
         }
-
         return Math.min(updated, questGoal);
       });
     }
@@ -131,40 +270,96 @@ export default function Home() {
   };
 
   /* -----------------------------
+      SIMULATE STEPS (for testing)
+  ------------------------------*/
+  const simulateSteps = () => {
+    const fakeSteps = 500;
+    setStepsToday((prev) => prev + fakeSteps);
+    setTotalSteps((prev) => prev + fakeSteps);
+    handleStepGain(fakeSteps);
+  };
+
+  /* -----------------------------
       UI VALUES
   ------------------------------*/
   const xpToNext = level * 100;
-  const xpPercent = Math.round((xp / xpToNext) * 100);
+  const xpPercent = Math.min(100, Math.round((xp / xpToNext) * 100));
 
-  const questGoal = Number(activeQuest?.steps || 0); // FIX for UI
+  const questGoal = Number(activeQuest?.steps || 0);
   const questPercent = activeQuest
-    ? Math.round((questProgress / questGoal) * 100)
+    ? Math.min(100, Math.round((questProgress / questGoal) * 100))
     : 0;
+
+  // ✅ Pixel knight sprite depends on level + totalSteps
+  const heroSprite = getHeroSprite(level, totalSteps);
+  const pixelRows = heroSprite.pixels;
+  const cols = pixelRows[0].length;
 
   return (
     <div className="page">
       <h1 className="page-title">StepQuest Dashboard</h1>
 
-      {/* Knight */}
+      {/* PIXEL KNIGHT (code‑drawn) */}
       <div className="knight-container">
-        <img ref={knightRef} src={knightImg} className="knight-sprite" />
+        <div
+          ref={knightRef}
+          className="hero-pixel-grid"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            boxShadow: `0 0 0 4px ${heroSprite.colors["1"]}33, 0 0 16px ${heroSprite.colors["3"]}66`,
+          }}
+        >
+          {pixelRows.map((row, rowIndex) =>
+            row.split("").map((cell, colIndex) => {
+              const key = `${rowIndex}-${colIndex}`;
+              if (cell === ".") {
+                return (
+                  <div
+                    key={key}
+                    className="hero-pixel-cell pixel-empty"
+                  />
+                );
+              }
+              const color = heroSprite.colors[cell] || "transparent";
+              return (
+                <div
+                  key={key}
+                  className="hero-pixel-cell"
+                  style={{ backgroundColor: color }}
+                />
+              );
+            })
+          )}
+        </div>
+
         <div className="knight-info">
           <p className="knight-level">LVL {level}</p>
-          <p className="knight-title">Wanderer of the Unknown</p>
+          <p className="knight-title">{heroSprite.title}</p>
         </div>
       </div>
 
       {/* Inventory */}
-      <button className="inventory-btn" onClick={() => navigate("/inventory")}>
+      <button
+        className="inventory-btn"
+        onClick={() => navigate("/inventory")}
+      >
         🎒
       </button>
 
       {/* Stats */}
       <div className="card">
-        <p className="stat">Steps Today: <span className="stat-highlight">{stepsToday}</span></p>
-        <p className="stat">Total Steps: <span className="stat-highlight">{totalSteps}</span></p>
-        <p className="stat">Level: <span className="stat-highlight">{level}</span></p>
-        <p className="stat">XP: {xp} / {xpToNext}</p>
+        <p className="stat">
+          Steps Today: <span className="stat-highlight">{stepsToday}</span>
+        </p>
+        <p className="stat">
+          Total Steps: <span className="stat-highlight">{totalSteps}</span>
+        </p>
+        <p className="stat">
+          Level: <span className="stat-highlight">{level}</span>
+        </p>
+        <p className="stat">
+          XP: {xp} / {xpToNext}
+        </p>
 
         <div className="xp-bar">
           <div className="xp-fill" style={{ width: `${xpPercent}%` }} />
@@ -180,14 +375,20 @@ export default function Home() {
             <p className="stat">
               Progress: {questProgress} / {questGoal}
             </p>
-
             <div className="quest-bar">
-              <div className="quest-fill" style={{ width: `${questPercent}%` }} />
+              <div
+                className="quest-fill"
+                style={{ width: `${questPercent}%` }}
+              />
             </div>
-
             {questCompleted && <p>✅ Quest Completed!</p>}
           </>
         )}
+
+        {/* test button so you can see colours change without real steps */}
+        <button className="btn-primary" onClick={simulateSteps}>
+          Simulate +500 Steps
+        </button>
       </div>
     </div>
   );
