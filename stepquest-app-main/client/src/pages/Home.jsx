@@ -72,7 +72,7 @@ export default function Home() {
   const { activeQuest, totalSteps, setTotalSteps } = useQuest();
   const { addItem } = useInventory();
   const { unlock } = useAchievements();
-  const { user } = useAuth(); // 👈 current logged‑in Supabase user
+  const { user } = useAuth(); // current logged‑in Supabase user
 
   // Local UI state
   const [stepsToday, setStepsToday] = useState(0);
@@ -85,8 +85,18 @@ export default function Home() {
   // track when we've loaded from Supabase so we don't overwrite with zeros
   const [statsLoaded, setStatsLoaded] = useState(false);
 
+  // 🔹 NEW: avatar from ProfilePage (localStorage)
+  const [avatar, setAvatar] = useState(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("selectedAvatar");
+    if (stored) {
+      setAvatar(stored);
+    }
+  }, []);
+
   /* -----------------------------
-      LOAD STATS FROM SUPABASE
+        LOAD STATS FROM SUPABASE
   ------------------------------*/
   useEffect(() => {
     if (!user) return;
@@ -112,13 +122,15 @@ export default function Home() {
         setLevel(data.level ?? 1);
       } else {
         // first time – create default row
-        const { error: insertError } = await supabase.from("player_stats").insert({
-          user_id: user.id,
-          steps_today: 0,
-          total_steps: 0,
-          xp: 0,
-          level: 1,
-        });
+        const { error: insertError } = await supabase
+          .from("player_stats")
+          .insert({
+            user_id: user.id,
+            steps_today: 0,
+            total_steps: 0,
+            xp: 0,
+            level: 1,
+          });
 
         if (insertError) {
           console.error("Error creating stats row:", insertError);
@@ -132,7 +144,7 @@ export default function Home() {
   }, [user, setTotalSteps]);
 
   /* -----------------------------
-      HELPER TO SAVE STATS
+        HELPER TO SAVE STATS
   ------------------------------*/
   const saveStats = async (stats) => {
     if (!user) return;
@@ -160,7 +172,7 @@ export default function Home() {
   }, [user, statsLoaded, stepsToday, totalSteps, xp, level]);
 
   /* -----------------------------
-      LOOT TABLE
+        LOOT TABLE
   ------------------------------*/
   const LOOT_TABLE = [
     { name: "Traveler Boots", rarity: "Uncommon", icon: "🥾", stats: { spd: 1 } },
@@ -187,7 +199,7 @@ export default function Home() {
   };
 
   /* -----------------------------
-      RESET QUEST WHEN SWITCHED
+        RESET QUEST WHEN SWITCHED
   ------------------------------*/
   useEffect(() => {
     if (activeQuest) {
@@ -198,7 +210,7 @@ export default function Home() {
   }, [activeQuest]);
 
   /* -----------------------------
-      STEP TRACKING (REAL)
+        STEP TRACKING (REAL)
   ------------------------------*/
   useEffect(() => {
     startStepTracking((steps) => {
@@ -211,7 +223,7 @@ export default function Home() {
   }, []);
 
   /* -----------------------------
-      MAIN LOGIC FOR STEP GAINS
+        MAIN LOGIC FOR STEP GAINS
   ------------------------------*/
   const handleStepGain = (amount) => {
     const newTotal = totalSteps + amount;
@@ -266,7 +278,7 @@ export default function Home() {
   };
 
   /* -----------------------------
-      SIMULATE STEPS (for testing)
+        SIMULATE STEPS (for testing)
   ------------------------------*/
   const simulateSteps = () => {
     const fakeSteps = 500;
@@ -276,7 +288,7 @@ export default function Home() {
   };
 
   /* -----------------------------
-      UI VALUES
+        UI VALUES
   ------------------------------*/
   const xpToNext = level * 100;
   const xpPercent = Math.min(100, Math.round((xp / xpToNext) * 100));
@@ -286,12 +298,12 @@ export default function Home() {
     ? Math.min(100, Math.round((questProgress / questGoal) * 100))
     : 0;
 
-  // ✅ Pixel knight sprite depends on level + totalSteps
+  // Pixel knight sprite depends on level + totalSteps
   const heroSprite = getHeroSprite(level, totalSteps);
   const pixelRows = heroSprite.pixels;
   const cols = pixelRows[0].length;
 
-  // NEW: mobile‑app style metrics
+  // mobile‑app style metrics
   const dailyGoal = 5000; // change if you like
   const dayPercent = Math.min(100, Math.round((stepsToday / dailyGoal) * 100));
   const distanceKm = (stepsToday * 0.0008).toFixed(1); // rough km estimate
@@ -313,6 +325,23 @@ export default function Home() {
               })}
             </p>
           </div>
+
+          {/* 🔹 Avatar top‑right */}
+          <button
+            className="home-avatar-btn"
+            onClick={() => navigate("/profile")}
+            aria-label="Open profile"
+          >
+            {avatar ? (
+              <img
+                src={avatar}
+                alt="Your avatar"
+                className="home-avatar-img"
+              />
+            ) : (
+              <span className="home-avatar-placeholder">🙂</span>
+            )}
+          </button>
         </header>
 
         {/* BIG CIRCLE CARD */}

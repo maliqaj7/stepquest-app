@@ -266,3 +266,31 @@ body {
   background: #020617;
   border-bottom: 1px solid #111827;
 }
+
+
+/*
+
+/* Avatar button in Home header */
+.home-avatar-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 2px solid #0ea5e9;
+  background: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.home-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-avatar-placeholder {
+  font-size: 1.4rem;
+}

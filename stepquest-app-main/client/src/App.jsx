@@ -8,6 +8,7 @@ import Map from "./pages/Map";
 import InventoryPage from "./pages/InventoryPage";
 import AIQuestMaster from "./pages/AIQuestMaster";
 import Insights from "./pages/Insights";
+import ProfilePage from "./pages/ProfilePage";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -39,6 +40,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/quests"
             element={
@@ -47,6 +49,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/map"
             element={
@@ -55,6 +58,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/inventory"
             element={
@@ -63,6 +67,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/ai"
             element={
@@ -71,11 +76,22 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/insights"
             element={
               <ProtectedRoute>
                 <Insights />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 👇 NEW: PROFILE ROUTE (also protected) */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

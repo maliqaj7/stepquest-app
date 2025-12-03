@@ -65,6 +65,17 @@ export default function Navbar() {
         <span className="pixel-tab-label">Insights</span>
       </NavLink>
 
+      <NavLink
+  to="/profile"
+  className={({ isActive }) =>
+    `pixel-tab ${isActive ? "active" : ""}`
+  }
+>
+  <span className="pixel-tab-icon">👤</span>
+  <span className="pixel-tab-label">Profile</span>
+</NavLink>
+
+
       <button
         type="button"
         className="pixel-tab logout-tab"
