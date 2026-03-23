@@ -1,97 +1,138 @@
 import { useQuest } from "../context/QuestContext";
 import knightImg from "../assets/knight.png";
 import "../components/Map.css";
+import { ZONES as zones } from "../data/zones";
+import { useEnvironment } from "../hooks/useEnvironment";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
+const getKnightIcon = () =>
+  new L.Icon({
+    iconUrl: knightImg,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  });
 
-const zones = [
-  { id: 1, name: "Forest Edge", requiredSteps: 0, description: "A calm starting area to begin your journey." },
-  { id: 2, name: "Whispering Woods", requiredSteps: 2000, description: "Deeper forest paths unlocked by steady walking." },
-  { id: 3, name: "Mountain Trail", requiredSteps: 5000, description: "A challenging climb for dedicated adventurers." },
-  { id: 4, name: "Crystal Peaks", requiredSteps: 8000, description: "High-altitude zone for serious step grinders." },
-];
+const getZoneIcon = (emoji, unlocked) =>
+  new L.DivIcon({
+    html: `<div style="font-size: 28px; filter: ${
+      unlocked ? "drop-shadow(0 0 8px rgba(34,197,94,0.8))" : "grayscale(100%) opacity(50%)"
+    };">${emoji}</div>`,
+    className: "custom-zone-icon",
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+  });
 
 export default function Map() {
   const { totalSteps } = useQuest();
+  const { city, lat, lon, loading } = useEnvironment();
 
-  // Get all unlocked zones
-  const unlockedZones = zones.filter((z) => totalSteps >= z.requiredSteps);
-  const unlockedCount = unlockedZones.length;
+  if (loading || !lat || !lon) {
+    return (
+      <div className="page" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+        <p className="stat muted" style={{ fontSize: "1.2rem", textAlign: "center" }}>
+          📡 Calibrating GPS...
+        </p>
+      </div>
+    );
+  }
 
-  // Current zone = last unlocked zone
-  const currentZone = unlockedZones[unlockedZones.length - 1];
+  // Rewrite zones to include the user's city
+  const localizedZones = zones.map((z, idx) => {
+    if (!city || city === "Unknown") return z;
+    if (idx === 0) return { ...z, name: `${city} Edge` };
+    if (idx === 1) return { ...z, name: `${city} Woods` };
+    return z;
+  });
 
-  // Next zone steps
-  const nextZone = zones.find((z) => z.requiredSteps > totalSteps);
+  // Calculate coordinates radiating outward from the user
+  const userPos = [lat, lon];
+  const offsets = [
+    [0.003, 0.003],   // Zone 1
+    [0.007, -0.004],  // Zone 2
+    [0.015, 0.002],   // Zone 3
+    [0.018, 0.012],   // Zone 4
+  ];
+
+  const mappedZones = localizedZones.map((z, i) => ({
+    ...z,
+    coords: [lat + offsets[i][0], lon + offsets[i][1]],
+  }));
+
+  const unlockedCount = mappedZones.filter((z) => totalSteps >= z.requiredSteps).length;
+  const pathPositions = [userPos, ...mappedZones.map((z) => z.coords)];
 
   return (
-    <div className="page">
-      <h1 className="page-title">World Map</h1>
-
-      {/* ====== TOP STATS CARD ====== */}
-      <div className="card" style={{ marginBottom: "1rem" }}>
-        <p className="stat">
-          Total Steps:{" "}
-          <span className="stat-highlight">{totalSteps}</span>
+    <div className="page map-page" style={{ padding: 0, height: "100%", display: "flex", flexDirection: "column" }}>
+      <div
+        className="card"
+        style={{
+          margin: "1rem",
+          zIndex: 1000, // Stay above Leaflet map
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          background: "rgba(9, 9, 11, 0.85)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
+        <p className="stat" style={{ margin: 0 }}>
+          GPS Locked: <span className="stat-highlight">{city}</span>
         </p>
-
-        <p className="stat">
-          Zones Unlocked:{" "}
-          <span className="stat-highlight">{unlockedCount} / {zones.length}</span>
+        <p className="stat" style={{ margin: 0 }}>
+          Zones Unlocked: <span className="stat-highlight">{unlockedCount} / {mappedZones.length}</span>
         </p>
-
-        {nextZone ? (
-          <p className="stat" style={{ fontSize: "0.8rem", opacity: 0.85 }}>
-            Next zone unlocks at{" "}
-            <span className="stat-highlight">{nextZone.requiredSteps.toLocaleString()}</span>{" "}
-            steps
-          </p>
-        ) : (
-          <p className="stat" style={{ fontSize: "0.8rem", opacity: 0.85 }}>
-            🎉 You have reached the final zone!
-          </p>
-        )}
       </div>
 
-      {/* ====== MAP GRID ====== */}
-      <div className="map-grid">
-        {zones.map((zone) => {
-          const unlocked = totalSteps >= zone.requiredSteps;
-          const isCurrentZone = currentZone && currentZone.id === zone.id;
+      <div style={{ flex: 1, position: "relative" }}>
+        <MapContainer
+          center={userPos}
+          zoom={14}
+          style={{ width: "100%", height: "100vh" }}
+          zoomControl={false}
+        >
+          {/* Dark themed map tiles */}
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          />
 
-          return (
-            <div
-              key={zone.id}
-              className={`map-tile ${unlocked ? "map-tile-unlocked" : "map-tile-locked"}`}
-            >
-              {/* Knight Marker if in this zone */}
-              {isCurrentZone && (
-                <div className="map-knight-marker">
-                  <img src={knightImg} alt="Knight" className="map-knight-icon" />
-                  <span className="map-knight-text">You Are Here</span>
-                </div>
-              )}
+          {/* Connect the zones with a dashed line */}
+          <Polyline
+            positions={pathPositions}
+            pathOptions={{ color: "#22c55e", dashArray: "10, 10", weight: 3, opacity: 0.6 }}
+          />
 
-              <div className="map-tile-header">
-                <span>{zone.name}</span>
-                <span className="map-tile-status">
-                  {unlocked ? "Unlocked" : "Locked"}
-                </span>
-              </div>
+          {/* User Marker */}
+          <Marker position={userPos} icon={getKnightIcon()}>
+            <Popup zIndexOffset={1000}>
+              <div style={{ color: "#000", fontWeight: "bold" }}>You are here!</div>
+            </Popup>
+          </Marker>
 
-              <p className="map-tile-description">{zone.description}</p>
-
-              {!unlocked && (
-                <p className="map-tile-requirement">
-                  Unlock at {zone.requiredSteps.toLocaleString()} steps
-                </p>
-              )}
-
-              {unlocked && (
-                <p className="map-tile-requirement">✅ Zone unlocked!</p>
-              )}
-            </div>
-          );
-        })}
+          {/* Zone Boss Markers */}
+          {mappedZones.map((zone) => {
+            const unlocked = totalSteps >= zone.requiredSteps;
+            return (
+              <Marker key={zone.id} position={zone.coords} icon={getZoneIcon("🦹‍♂️", unlocked)}>
+                <Popup>
+                  <div style={{ color: "#000", minWidth: "150px" }}>
+                    <h3 style={{ margin: "0 0 5px 0", fontSize: "1rem" }}>{zone.name}</h3>
+                    <p style={{ margin: "0 0 5px 0", fontSize: "0.8rem" }}>{zone.description}</p>
+                    {unlocked ? (
+                      <strong style={{ color: "green" }}>✅ Unlocked!</strong>
+                    ) : (
+                      <em style={{ color: "red" }}>Requires {zone.requiredSteps} steps</em>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
       </div>
     </div>
   );

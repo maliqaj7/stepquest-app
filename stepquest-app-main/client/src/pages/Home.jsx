@@ -6,6 +6,12 @@ import { useAchievements } from "../context/Achievement";
 import { useInventory } from "../context/InventoryContext";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import QuestCompleteModal from "../components/QuestCompleteModal";
+import LevelUpModal from "../components/LevelUpModal";
+import ZoneUnlockModal from "../components/ZoneUnlockModal";
+import { ZONES } from "../data/zones";
+import { useEnvironment } from "../hooks/useEnvironment";
+import "../components/Modals.css";
 
 /* -----------------------------
    PIXEL KNIGHT SPRITES
@@ -78,15 +84,28 @@ export default function Home() {
   const [stepsToday, setStepsToday] = useState(0);
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
+  const [dailyGoal, setDailyGoal] = useState(5000);
+  const [streak, setStreak] = useState(0);
   const [questProgress, setQuestProgress] = useState(0);
   const [questCompleted, setQuestCompleted] = useState(false);
   const [questRewardGiven, setQuestRewardGiven] = useState(false);
+
+  // Modal states
+  const [showQuestModal, setShowQuestModal] = useState(false);
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [showZoneModal, setShowZoneModal] = useState(false);
+  const [recentLevelData, setRecentLevelData] = useState(null);
+  const [recentRewardData, setRecentRewardData] = useState(null);
+  const [unlockedZoneData, setUnlockedZoneData] = useState(null);
 
   // track when we've loaded from Supabase so we don't overwrite with zeros
   const [statsLoaded, setStatsLoaded] = useState(false);
 
   // 🔹 NEW: avatar from ProfilePage (localStorage)
   const [avatar, setAvatar] = useState(null);
+
+  // 🔹 NEW: Local Geolocation Weather Environment
+  const { city, weather, temp } = useEnvironment();
 
   useEffect(() => {
     const stored = localStorage.getItem("selectedAvatar");
@@ -123,6 +142,7 @@ export default function Home() {
       setTotalSteps(data.total_steps ?? 0);
       setXp(data.xp ?? 0);
       setLevel(data.level ?? 1);
+      setDailyGoal(data.daily_goal ?? 5000);
 
       // Update last_updated + reset daily steps in Supabase
       if (isNewDay) {
@@ -136,14 +156,95 @@ export default function Home() {
       }
     } else {
       // First time user row
+      const newUsername = user.email ? user.email.split("@")[0] : `Hero_${user.id.substring(0,4)}`;
       await supabase.from("player_stats").insert({
         user_id: user.id,
+        username: newUsername,
         steps_today: 0,
         total_steps: 0,
         xp: 0,
         level: 1,
+        daily_goal: 5000,
         last_updated: today,
       });
+    }
+
+    // Load Streak
+    const { data: stepHistory } = await supabase
+      .from("daily_steps")
+      .select("date, steps")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+
+    if (stepHistory) {
+      const records = new Set(stepHistory.filter(d => d.steps > 0).map(d => d.date));
+      let count = 0;
+      let checkDate = new Date();
+      let dateStr = checkDate.toISOString().split("T")[0];
+
+      if (records.has(dateStr) || (data && data.steps_today > 0) || isNewDay === false) {
+        // Evaluate today and step backwards
+        if (records.has(dateStr) || (data && data.steps_today > 0)) count = 1;
+        
+        checkDate.setDate(checkDate.getDate() - 1);
+        dateStr = checkDate.toISOString().split("T")[0];
+        while (records.has(dateStr)) {
+          count++;
+          checkDate.setDate(checkDate.getDate() - 1);
+          dateStr = checkDate.toISOString().split("T")[0];
+        }
+      } else {
+        // Today has no steps yet, see if yesterday kept the streak alive
+        checkDate.setDate(checkDate.getDate() - 1);
+        dateStr = checkDate.toISOString().split("T")[0];
+        if (records.has(dateStr)) {
+          count = 1;
+          checkDate.setDate(checkDate.getDate() - 1);
+          dateStr = checkDate.toISOString().split("T")[0];
+          while (records.has(dateStr)) {
+            count++;
+            checkDate.setDate(checkDate.getDate() - 1);
+            dateStr = checkDate.toISOString().split("T")[0];
+          }
+        }
+      }
+      setStreak(count);
+
+      // --- ADAPTIVE GOAL LOGIC ---
+      const currentGoal = data?.daily_goal ?? 5000;
+      let goalDaysMet = 0;
+      let checkDateGoal = new Date();
+      let dateStrGoal = checkDateGoal.toISOString().split("T")[0];
+      
+      // Check if today met the goal
+      if ((data && data.steps_today >= currentGoal)) {
+         goalDaysMet++;
+      }
+      
+      // Look back
+      checkDateGoal.setDate(checkDateGoal.getDate() - 1);
+      dateStrGoal = checkDateGoal.toISOString().split("T")[0];
+      let pastRec = stepHistory.find(d => d.date === dateStrGoal);
+      
+      while(pastRec && pastRec.steps >= currentGoal) {
+         goalDaysMet++;
+         checkDateGoal.setDate(checkDateGoal.getDate() - 1);
+         dateStrGoal = checkDateGoal.toISOString().split("T")[0];
+         pastRec = stepHistory.find(d => d.date === dateStrGoal);
+      }
+
+      // If met for 3+ days, adaptive bump!
+      if (goalDaysMet >= 3) {
+        const newGoal = Math.round(currentGoal * 1.1); // 10% increase
+        setDailyGoal(newGoal);
+        await supabase.from("player_stats").update({ daily_goal: newGoal }).eq("user_id", user.id);
+        
+        // Let the user know they are scaling up!
+        if ("Notification" in window && Notification.permission === "granted") {
+           new Notification("Level Up Your Activity!", { body: `You crushed your goals! Your daily goal increased to ${newGoal} steps.` });
+        }
+      }
+
     }
 
     setStatsLoaded(true);
@@ -159,9 +260,19 @@ export default function Home() {
   const saveStats = async (stats) => {
     if (!user) return;
 
+    const username = user.email ? user.email.split("@")[0] : `Hero_${user.id.substring(0,4)}`;
+    const today = new Date().toISOString().split("T")[0];
+
     const { error } = await supabase.from("player_stats").upsert({
       user_id: user.id,
+      username,
       ...stats,
+    });
+
+    await supabase.from("daily_steps").upsert({
+      user_id: user.id,
+      date: today,
+      steps: stats.steps_today
     });
 
     if (error) {
@@ -220,6 +331,30 @@ export default function Home() {
   }, [activeQuest]);
 
   /* -----------------------------
+        QUEST REMINDER NOTIFICATIONS
+  ------------------------------*/
+  useEffect(() => {
+    if (activeQuest && !questCompleted && "Notification" in window) {
+      const today = new Date().toISOString().split("T")[0];
+      const lastReminded = localStorage.getItem("quest_reminded");
+      const currentHour = new Date().getHours();
+
+      // Fire push notification if it's past noon, and we haven't already today
+      if (currentHour >= 12 && lastReminded !== today) {
+        Notification.requestPermission().then((perm) => {
+          if (perm === "granted") {
+            const stepsLeft = Number(activeQuest.steps) - questProgress;
+            new Notification("StepQuest: Hero Needed!", {
+              body: `Don't forget to complete your active quest: ${activeQuest.title}. Only ${stepsLeft} steps remaining!`,
+            });
+            localStorage.setItem("quest_reminded", today);
+          }
+        });
+      }
+    }
+  }, [activeQuest, questCompleted, questProgress]);
+
+  /* -----------------------------
         STEP TRACKING (REAL)
   ------------------------------*/
   useEffect(() => {
@@ -239,6 +374,27 @@ export default function Home() {
     const newTotal = totalSteps + amount;
     const questGoal = Number(activeQuest?.steps || 0);
 
+    // ZONE UNLOCK DETECTION
+    const prevUnlockedZones = ZONES.filter(z => totalSteps >= z.requiredSteps);
+    const newUnlockedZones = ZONES.filter(z => newTotal >= z.requiredSteps);
+
+    if (newUnlockedZones.length > prevUnlockedZones.length) {
+      // Unlocked at least one new zone
+      const newZone = newUnlockedZones[newUnlockedZones.length - 1];
+      setUnlockedZoneData(newZone);
+      setShowZoneModal(true);
+
+      // Persist unlock in Supabase seamlessly
+      if (user) {
+        supabase.from("zone_unlocks").insert({
+          user_id: user.id,
+          zone_id: newZone.id
+        }).then(({ error }) => {
+          if (error) console.error("Error saving zone unlock:", error);
+        });
+      }
+    }
+
     // Pixel knight "walk" animation
     if (knightRef.current) {
       knightRef.current.classList.add("knight-walk");
@@ -246,15 +402,28 @@ export default function Home() {
     }
 
     /* XP SYSTEM */
+    let gainedLevel = false;
+    let nextLevel = level;
     setXp((prev) => {
-      const needed = level * 100;
+      const needed = 300;
       const updated = prev + Math.round(amount * 0.1);
       if (updated >= needed) {
-        setLevel((prevLevel) => prevLevel + 1);
+        gainedLevel = true;
+        nextLevel = level + 1;
         return updated - needed;
       }
       return updated;
     });
+
+    if (gainedLevel) {
+      setLevel(nextLevel);
+      setRecentLevelData({
+        oldLevel: level,
+        newLevel: nextLevel,
+        newTitle: getHeroSprite(nextLevel, totalSteps).title
+      });
+      setShowLevelModal(true);
+    }
 
     /* QUEST SYSTEM */
     if (activeQuest && !questCompleted) {
@@ -263,8 +432,13 @@ export default function Home() {
         if (updated >= questGoal && !questRewardGiven) {
           setQuestCompleted(true);
           setQuestRewardGiven(true);
-          alert(`🎉 Quest Complete: ${activeQuest.title}`);
-          setXp((prevXp) => prevXp + 100);
+          setXp((prevXp) => prevXp + activeQuest.reward);
+
+          const item = rollLoot();
+          addItem(item);
+
+          setRecentRewardData(item);
+          setShowQuestModal(true);
         }
         return Math.min(updated, questGoal);
       });
@@ -300,7 +474,7 @@ export default function Home() {
   /* -----------------------------
         UI VALUES
   ------------------------------*/
-  const xpToNext = level * 100;
+  const xpToNext = 300;
   const xpPercent = Math.min(100, Math.round((xp / xpToNext) * 100));
 
   const questGoal = Number(activeQuest?.steps || 0);
@@ -314,7 +488,6 @@ export default function Home() {
   const cols = pixelRows[0].length;
 
   // mobile‑app style metrics
-  const dailyGoal = 5000; // change if you like
   const dayPercent = Math.min(100, Math.round((stepsToday / dailyGoal) * 100));
   const distanceKm = (stepsToday * 0.0008).toFixed(1); // rough km estimate
   const calories = Math.round(stepsToday * 0.05); // rough kcal
@@ -334,6 +507,11 @@ export default function Home() {
                 day: "numeric",
               })}
             </p>
+            {city && temp != null && (
+              <p className="home-header-weather" style={{ fontSize: "0.85rem", color: "#a1a1aa", marginTop: "0.25rem", fontWeight: "600" }}>
+                {weather} {temp}°C in {city}
+              </p>
+            )}
           </div>
 
           {/* 🔹 Avatar top‑right */}
@@ -373,8 +551,14 @@ export default function Home() {
           </div>
 
           <div className="steps-badge">
+            {streak > 0 && (
+              <>
+                <span className="badge-icon">🔥</span>
+                <span className="badge-text" style={{marginRight: "0.4rem"}}>{streak} Day Streak</span>
+              </>
+            )}
             <span className="badge-icon">⚔️</span>
-            <span className="badge-text">StepQuest · LVL {level}</span>
+            <span className="badge-text">LVL {level}</span>
           </div>
         </section>
 
@@ -493,6 +677,31 @@ export default function Home() {
           </button>
         </section>
       </div>
+
+      {showQuestModal && (
+        <QuestCompleteModal
+          quest={activeQuest}
+          xpGained={activeQuest.reward}
+          itemDropped={recentRewardData}
+          onClose={() => setShowQuestModal(false)}
+        />
+      )}
+
+      {showLevelModal && recentLevelData && (
+        <LevelUpModal
+          oldLevel={recentLevelData.oldLevel}
+          newLevel={recentLevelData.newLevel}
+          newTitle={recentLevelData.newTitle}
+          onClose={() => setShowLevelModal(false)}
+        />
+      )}
+
+      {showZoneModal && unlockedZoneData && (
+        <ZoneUnlockModal
+          zone={unlockedZoneData}
+          onClose={() => setShowZoneModal(false)}
+        />
+      )}
     </div>
   );
 }

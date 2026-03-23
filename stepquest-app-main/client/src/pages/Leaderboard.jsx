@@ -49,7 +49,7 @@ export default function Leaderboard() {
                   <div>
                     <span style={{ marginRight: "0.5rem" }}>#{idx + 1}</span>
                     <span style={{ fontWeight: isYou ? 700 : 500 }}>
-                      {isYou ? "You" : `Hero ${idx + 1}`}
+                      {isYou ? "You" : row.username || `Hero ${idx + 1}`}
                     </span>
                   </div>
                   <span className="stat-highlight">

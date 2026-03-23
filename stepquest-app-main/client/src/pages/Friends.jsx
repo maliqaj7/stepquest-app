@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { fetchFriends, addFriend } from "../services/socialService";
+import { fetchFriends, addFriend, removeFriend } from "../services/socialService";
 
 export default function Friends() {
   const { user } = useAuth();
@@ -30,7 +30,7 @@ export default function Friends() {
     setSaving(false);
 
     if (error) {
-      alert("Could not add friend – check console.");
+      alert(error.message || "Could not add friend – check console.");
       return;
     }
 
@@ -40,14 +40,18 @@ export default function Friends() {
     setFriends(data);
   };
 
+  const handleRemove = async (id) => {
+    await removeFriend(id);
+    setFriends((prev) => prev.filter((f) => f.id !== id));
+  };
+
   return (
     <div className="page">
       <h1 className="page-title">Friends</h1>
 
       <div className="card">
         <p className="stat">
-          Add friends by email (prototype). In a full version we&apos;d send them
-          an invite to join your party.
+          Add friends by email (prototype). Validates against existing users.
         </p>
 
         <form
@@ -94,16 +98,33 @@ export default function Friends() {
             <div
               key={f.id}
               style={{
-                padding: "0.5rem 0",
-                borderBottom: "1px solid #111827",
+                padding: "0.75rem 0",
+                borderBottom: "1px solid rgba(255,255,255,0.05)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
               }}
             >
-              <p className="stat">
+              <p className="stat" style={{ margin: 0 }}>
                 {f.nickname || f.friend_email}{" "}
-                <span className="stat muted">
+                <span className="stat muted" style={{ fontSize: "0.8rem" }}>
                   ({f.friend_email})
                 </span>
               </p>
+              <button 
+                className="btn-primary" 
+                style={{ 
+                  background: "rgba(239, 68, 68, 0.2)", 
+                  color: "#fca5a5", 
+                  border: "1px solid rgba(239, 68, 68, 0.5)",
+                  padding: "0.3rem 0.6rem", 
+                  minHeight: "auto",
+                  fontSize: "0.8rem"
+                }}
+                onClick={() => handleRemove(f.id)}
+              >
+                Remove
+              </button>
             </div>
           ))}
       </div>
