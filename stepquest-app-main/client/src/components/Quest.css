@@ -1,15 +1,31 @@
+/* ========================================
+   QUEST CARDS — Premium Redesign
+   ======================================== */
+
 .quest-difficulty {
-  font-weight: bold;
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
   margin-bottom: 8px;
-  text-shadow: 1px 1px #000;
 }
 
 .quest-card {
   position: relative;
+  border-left: 4px solid var(--border-subtle);
+  transition: var(--transition-fast);
+}
+
+.quest-card:hover {
+  border-left-color: var(--gold);
 }
 
 .card-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }

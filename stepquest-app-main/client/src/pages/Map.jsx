@@ -50,16 +50,21 @@ export default function Map() {
   // Calculate coordinates radiating outward from the user
   const userPos = [lat, lon];
   const offsets = [
-    [0.003, 0.003],   // Zone 1
-    [0.007, -0.004],  // Zone 2
-    [0.015, 0.002],   // Zone 3
-    [0.018, 0.012],   // Zone 4
+    [0.003, 0.003],    // Zone 1
+    [0.007, -0.004],   // Zone 2
+    [0.015, 0.002],    // Zone 3
+    [0.018, 0.012],    // Zone 4
+    [0.025, -0.008],   // Zone 5 (Citadel)
   ];
 
-  const mappedZones = localizedZones.map((z, i) => ({
-    ...z,
-    coords: [lat + offsets[i][0], lon + offsets[i][1]],
-  }));
+  const mappedZones = localizedZones.map((z, i) => {
+    // Safety fallback to prevent component crash if offset is missing
+    const offset = offsets[i] || [0.03 + i * 0.01, 0.03 + i * 0.01];
+    return {
+      ...z,
+      coords: [lat + offset[0], lon + offset[1]],
+    };
+  });
 
   const unlockedCount = mappedZones.filter((z) => totalSteps >= z.requiredSteps).length;
   const pathPositions = [userPos, ...mappedZones.map((z) => z.coords)];

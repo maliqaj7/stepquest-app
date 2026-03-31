@@ -1,27 +1,59 @@
+/* ========================================
+   INVENTORY — Premium Redesign
+   ======================================== */
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 0.5rem;
+}
+
+.stats-grid .stat {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.9rem;
 }
 
 .select-menu {
-  padding: 6px;
-  font-family: "Press Start 2P";
-  background: #111;
-  color: white;
-  border: 2px solid #444;
+  padding: 0.6rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.select-menu:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
 }
 
 .remove-item-btn {
-  background: red;
-  border: 2px solid black;
-  color: white;
-  font-size: 0.8rem;
-  padding: 4px 6px;
+  background: rgba(244, 63, 94, 0.1);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #fda4af;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  height: 24px;
+  transition: var(--transition-fast);
+  min-width: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-item-btn:hover {
-  background: #ff4444;
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #fb7185;
+  transform: scale(1.05);
 }

@@ -1,28 +1,43 @@
+/* ========================================
+   SETTINGS — Premium Redesign
+   ======================================== */
+
 .settings-page {
-  padding: 2rem 1.5rem 5rem;
+  padding: 1.5rem 1.25rem 5rem;
   max-width: 720px;
   margin: 0 auto;
-  color: #f9fafb;
+  color: var(--text-primary);
 }
 
 .settings-title {
+  font-family: var(--font-display);
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .settings-card {
-  background: #020617;
-  border-radius: 18px;
-  padding: 1.3rem 1.4rem;
-  border: 1px solid #111827;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
   margin-bottom: 1rem;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition-fast);
 }
 
 .settings-section-title {
+  font-family: var(--font-display);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.75rem;
+  color: var(--gold);
+  letter-spacing: 0.03em;
 }
 
 /* --- Profile row inside Settings --- */
@@ -30,18 +45,20 @@
 .settings-row-button {
   width: 100%;
   border: none;
-  background: #020617;
-  border-radius: 14px;
-  padding: 0.7rem 0.6rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: var(--transition-fast);
+  border: 1px solid var(--border-subtle);
 }
 
 .settings-row-button:hover {
-  background: #030712;
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
   transform: translateY(-1px);
 }
 
@@ -52,14 +69,15 @@
 }
 
 .settings-avatar-wrapper {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
   overflow: hidden;
-  background: #111827;
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid var(--border-subtle);
 }
 
 .settings-avatar-img {
@@ -73,18 +91,19 @@
 }
 
 .settings-profile-name {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .settings-profile-sub {
-  font-size: 0.75rem;
-  color: #9ca3af;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .settings-chevron {
   font-size: 1.4rem;
-  color: #6b7280;
+  color: var(--text-dim);
 }
 
 /* Account */
@@ -92,52 +111,163 @@
 .settings-email {
   margin-bottom: 0.8rem;
   font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 .settings-email span {
-  color: #e5e7eb;
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .settings-primary-btn {
-  background: #3b82f6;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border: none;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
 
 .settings-primary-btn:hover {
-  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35);
 }
 
-/* Toggles */
+/* Toggle switches */
 
 .settings-toggle-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   font-size: 0.9rem;
-  margin-bottom: 0.4rem;
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.settings-toggle-row input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 42px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.settings-toggle-row input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: var(--transition-fast);
+}
+
+.settings-toggle-row input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  border-color: var(--gold);
+}
+
+.settings-toggle-row input[type="checkbox"]:checked::after {
+  left: 20px;
+  background: var(--bg-deep);
+}
+
+/* Daily Goal Section */
+.settings-goal-container {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.settings-goal-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.settings-goal-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.settings-goal-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.settings-goal-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.settings-goal-save {
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  color: var(--bg-deep);
+  border: none;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+}
+
+.settings-goal-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.settings-goal-hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin: 0;
 }
 
 /* Danger zone */
 
 .danger-card {
-  border-color: #7f1d1d;
+  border-color: rgba(244, 63, 94, 0.2);
 }
 
 .settings-danger-btn {
-  background: #b91c1c;
-  border: none;
-  padding: 0.55rem 1.1rem;
-  border-radius: 999px;
-  color: white;
-  font-weight: 600;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  color: #fda4af;
+  font-weight: 700;
   cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
 }
 
 .settings-danger-btn:hover {
-  background: #dc2626;
+  background: rgba(244, 63, 94, 0.2);
+  border-color: rgba(244, 63, 94, 0.5);
+  transform: translateY(-1px);
 }

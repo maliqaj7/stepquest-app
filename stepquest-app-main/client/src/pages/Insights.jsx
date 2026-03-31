@@ -1,67 +1,71 @@
-// src/pages/Insights.jsx
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuest } from "../context/QuestContext";
 
-const MONTH_LABELS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-
-// Helper to generate a distribution over 12 bars
-const BASE_WEIGHTS = [0.9, 1.1, 1.0, 1.3, 1.6, 1.2, 0.8, 0.9, 1.0, 1.4, 1.3, 1.1];
+const TABS = ["Day", "Week", "Month", "Year"];
+const TAB_CONFIG = {
+  Day: { count: 24, labels: ["00", "04", "08", "12", "16", "20"], weights: new Array(24).fill(0).map(() => 0.5 + Math.random()) },
+  Week: { count: 7, labels: ["M", "T", "W", "T", "F", "S", "S"], weights: [0.8, 1.2, 1.1, 1.4, 1.6, 2.0, 1.8] },
+  Month: { count: 12, labels: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"], weights: [0.9, 1.1, 1.0, 1.3, 1.6, 1.2, 0.8, 0.9, 1.0, 1.4, 1.3, 1.1] },
+  Year: { count: 5, labels: ["'22", "'23", "'24", "'25", "'26"], weights: [0.7, 0.9, 1.2, 1.5, 1.8] }
+};
 
 export default function Insights() {
   const { totalSteps } = useQuest();
+  const [activeTab, setActiveTab] = useState("Month");
 
-  // Derive some fake-but-consistent yearly stats from totalSteps
+  // Derive some fake-but-consistent stats based on totalSteps and activeTab
   const {
-    yearlyTotal,
-    monthlySteps,
-    bestMonthIndex,
-    bestMonthSteps,
-    avgSteps,
+    displayTotal,
+    stepsData,
+    bestIdx,
+    bestValue,
+    avgValue,
     linePoints,
+    labels
   } = useMemo(() => {
-    const yearlyTotal = totalSteps;
+    const config = TAB_CONFIG[activeTab];
+    const displayTotal = totalSteps;
 
-    if (yearlyTotal <= 0) {
+    if (displayTotal <= 0) {
       return {
-        yearlyTotal: 0,
-        monthlySteps: new Array(12).fill(0),
-        bestMonthIndex: 0,
-        bestMonthSteps: 0,
-        avgSteps: 0,
+        displayTotal: 0,
+        stepsData: new Array(config.count).fill(0),
+        bestIdx: 0,
+        bestValue: 0,
+        avgValue: 0,
         linePoints: "",
+        labels: config.labels
       };
     }
 
-    const weightSum = BASE_WEIGHTS.reduce((a, b) => a + b, 0);
-    const monthlyStepsRaw = BASE_WEIGHTS.map(
-      (w) => (yearlyTotal * w) / weightSum
+    const weightSum = config.weights.reduce((a, b) => a + b, 0);
+    const stepsData = config.weights.map(
+      (w) => Math.round((displayTotal * w) / weightSum)
     );
 
-    const monthlySteps = monthlyStepsRaw.map((v) => Math.round(v));
+    const bestValue = Math.max(...stepsData);
+    const bestIdx = stepsData.indexOf(bestValue);
+    const avgValue = Math.round(displayTotal / config.count);
 
-    const bestMonthSteps = Math.max(...monthlySteps);
-    const bestMonthIndex = monthlySteps.indexOf(bestMonthSteps);
-    const avgSteps = Math.round(yearlyTotal / 12);
-
-    const maxForChart = bestMonthSteps || 1;
-    const linePoints = monthlySteps
+    const maxForChart = bestValue || 1;
+    const linePoints = stepsData
       .map((value, idx) => {
-        const x =
-          (idx / (monthlySteps.length - 1 || 1)) * 100; // 0–100 across
-        const y = 100 - (value / maxForChart) * 100; // invert for SVG
+        const x = (idx / (stepsData.length - 1 || 1)) * 100; 
+        const y = 100 - (value / maxForChart) * 100; 
         return `${x},${y}`;
       })
       .join(" ");
 
     return {
-      yearlyTotal,
-      monthlySteps,
-      bestMonthIndex,
-      bestMonthSteps,
-      avgSteps,
+      displayTotal,
+      stepsData,
+      bestIdx,
+      bestValue,
+      avgValue,
       linePoints,
+      labels: config.labels
     };
-  }, [totalSteps]);
+  }, [totalSteps, activeTab]);
 
   const yearLabel = new Date().getFullYear();
 
@@ -70,13 +74,12 @@ export default function Insights() {
       <h1 className="page-title">Insights</h1>
 
       <div className="insights-shell">
-        {/* Header row: "Best Year" + Steps pill */}
         <div className="insights-header">
           <div>
-            <p className="insights-label">Best Year</p>
-            <p className="insights-year">{yearLabel}</p>
+            <p className="insights-label">Record Overview</p>
+            <p className="insights-year">{activeTab === "Year" ? "Last 5 Years" : yearLabel}</p>
             <p className="insights-total">
-              {yearlyTotal.toLocaleString()}{" "}
+              {displayTotal.toLocaleString()}{" "}
               <span className="insights-total-unit">steps</span>
             </p>
           </div>
@@ -84,45 +87,45 @@ export default function Insights() {
           <button className="insights-mode-pill">Steps ▾</button>
         </div>
 
-        {/* Tabs row */}
         <div className="insights-tabs">
-          <button className="insights-tab">Day</button>
-          <button className="insights-tab">Week</button>
-          <button className="insights-tab insights-tab-active">Month</button>
-          <button className="insights-tab">Year</button>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              className={`insights-tab ${activeTab === tab ? "insights-tab-active" : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Chart */}
         <div className="insights-chart-wrapper">
-          {/* Target & average labels */}
           <div className="insights-chart-bg">
             <div className="insights-line insights-line-top" />
             <div className="insights-line insights-line-mid" />
 
             <span className="insights-line-label insights-line-label-top">
-              {bestMonthSteps.toLocaleString()}
+              {bestValue.toLocaleString()}
             </span>
             <span className="insights-line-label insights-line-label-mid">
-              AVG {avgSteps.toLocaleString()}
+              AVG {avgValue.toLocaleString()}
             </span>
           </div>
 
-          {/* SVG line graph */}
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             className="insights-line-chart"
           >
-            {yearlyTotal > 0 && (
+            {displayTotal > 0 && (
               <>
                 <polyline
                   points={linePoints}
                   className="insights-line-path"
                 />
-                {monthlySteps.map((value, idx) => {
-                  const maxForChart = bestMonthSteps || 1;
-                  const x =
-                    (idx / (monthlySteps.length - 1 || 1)) * 100;
+                {stepsData.map((value, idx) => {
+                  const maxForChart = bestValue || 1;
+                  const x = (idx / (stepsData.length - 1 || 1)) * 100;
                   const y = 100 - (value / maxForChart) * 100;
 
                   return (
@@ -130,10 +133,10 @@ export default function Insights() {
                       key={idx}
                       cx={x}
                       cy={y}
-                      r={1.8}
+                      r={activeTab === "Day" ? 0.8 : 1.8}
                       className={
                         "insights-dot" +
-                        (idx === bestMonthIndex ? " insights-dot-best" : "")
+                        (idx === bestIdx ? " insights-dot-best" : "")
                       }
                     />
                   );
@@ -142,29 +145,28 @@ export default function Insights() {
             )}
           </svg>
 
-          {/* Month labels under chart */}
           <div className="insights-month-row">
-            {MONTH_LABELS.map((m) => (
-              <span key={m}>{m}</span>
+            {labels.map((l, i) => (
+              <span key={i}>{l}</span>
             ))}
           </div>
         </div>
 
-        {/* Summary text */}
         <p className="insights-summary">
-          {yearlyTotal > 0 ? (
+          {displayTotal > 0 ? (
             <>
-              You walked{" "}
+              Your {activeTab.toLowerCase()} record shows a peak of{" "}
               <span className="insights-highlight">
-                {yearlyTotal.toLocaleString()}
+                {bestValue.toLocaleString()}
               </span>{" "}
-              steps in {yearLabel}. That’s an impressive record.
+              steps. Keep pushing your limits!
             </>
           ) : (
-            <>Start walking to unlock your yearly insights.</>
+            <>Start walking to unlock your {activeTab.toLowerCase()} insights.</>
           )}
         </p>
       </div>
     </div>
   );
 }
+

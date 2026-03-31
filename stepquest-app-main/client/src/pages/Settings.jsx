@@ -141,43 +141,26 @@ export default function Settings() {
           <span>Vibration / haptics</span>
         </label>
 
-        <div className="settings-goal-container" style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <label style={{ fontSize: "0.85rem", color: "#a1a1aa", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <div className="settings-goal-container">
+          <label className="settings-goal-label">
             Daily Step Goal
           </label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div className="settings-goal-row">
             <input
               type="number"
               value={localGoal}
               onChange={(e) => setLocalGoal(e.target.value)}
               placeholder="e.g. 5000"
-              style={{
-                flex: 1,
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#e4e4e7",
-                padding: "0.6rem 1rem",
-                borderRadius: "10px",
-                fontFamily: "inherit",
-                fontSize: "1rem"
-              }}
+              className="settings-goal-input"
             />
             <button
               onClick={handleGoalSave}
-              style={{
-                background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
-                color: "#000",
-                border: "none",
-                fontWeight: "700",
-                padding: "0.6rem 1.25rem",
-                borderRadius: "10px",
-                cursor: "pointer",
-              }}
+              className="settings-goal-save"
             >
               Save
             </button>
           </div>
-          <p style={{ fontSize: "0.75rem", color: "#a1a1aa", margin: 0 }}>
+          <p className="settings-goal-hint">
             Hitting your goal 3 days in a row permanently increases it by 10%!
           </p>
         </div>

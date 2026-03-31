@@ -53,19 +53,22 @@ export default function Home() {
   const [recentLevelData, setRecentLevelData] = useState(null);
   const [recentRewardData, setRecentRewardData] = useState(null);
   const [unlockedZoneData, setUnlockedZoneData] = useState(null);
-
   // 🔹 NEW: avatar from ProfilePage (localStorage)
   const [avatar, setAvatar] = useState(null);
+  const [needsRecovery, setNeedsRecovery] = useState(false);
+  const [recoveryStepsRemaining, setRecoveryStepsRemaining] = useState(0);
 
   // 🔹 NEW: Local Geolocation Weather Environment
   const { city, weather, temp } = useEnvironment();
 
   useEffect(() => {
-    const stored = localStorage.getItem("selectedAvatar");
+    if (!user) return;
+    const key = `sq_${user.id}_avatar`;
+    const stored = localStorage.getItem(key);
     if (stored) {
       setAvatar(stored);
     }
-  }, []);
+  }, [user]);
 
   /* -----------------------------
         LOAD STATS FROM SUPABASE
@@ -89,17 +92,24 @@ export default function Home() {
     const data = results && results.length > 0 ? results[0] : null;
 
     const today = new Date().toISOString().split("T")[0];
+    let isNewDay = false;
 
     if (data) {
       const dbDate = data.last_updated ? String(data.last_updated).split("T")[0] : "";
-      const isNewDay = dbDate !== today;
+      isNewDay = dbDate !== today;
 
-      // If new day → reset stepsToday
-      setStepsToday(isNewDay ? 0 : data.steps_today ?? 0);
-      setTotalSteps(data.total_steps ?? 0);
-      setXp(data.xp ?? 0);
-      setLevel(data.level ?? 1);
-      setDailyGoal(data.daily_goal ?? 5000);
+      // Take the HIGHER of local cache vs Supabase to never lose progress
+      const dbStepsToday = isNewDay ? 0 : (data.steps_today ?? 0);
+      const dbTotalSteps = data.total_steps ?? 0;
+      const dbXp = data.xp ?? 0;
+      const dbLevel = data.level ?? 1;
+      const dbDailyGoal = data.daily_goal ?? 5000;
+
+      setStepsToday(prev => Math.max(Number(prev) || 0, dbStepsToday));
+      setTotalSteps(prev => Math.max(Number(prev) || 0, dbTotalSteps));
+      setXp(prev => Math.max(Number(prev) || 0, dbXp));
+      setLevel(prev => Math.max(Number(prev) || 1, dbLevel));
+      setDailyGoal(dbDailyGoal); // goal comes from server authority
 
       // Update last_updated + reset daily steps in Supabase
       if (isNewDay) {
@@ -237,17 +247,40 @@ export default function Home() {
     }
   };
 
-  // Whenever stats change (after initial load), sync to Supabase
+  // 🔹 Periodically sync to Supabase (debounced)
+  const pendingStatsRef = useRef(null);
+
   useEffect(() => {
     if (!user || !statsLoaded) return;
 
-    saveStats({
+    // Keep track of the latest stats for unmount saving
+    pendingStatsRef.current = {
       steps_today: stepsToday,
       total_steps: totalSteps,
       xp,
       level,
-    });
+    };
+
+    const timer = setTimeout(() => {
+      saveStats(pendingStatsRef.current);
+      pendingStatsRef.current = null; // Clear pending once saved
+    }, 3000); // 3s debounce to avoid spamming Supabase
+
+    // If the user navigates away (component unmounts) OR dependencies change,
+    // clear the timeout. BUT if it's an unmount and we have pending stats, SAVE THEM NOW!
+    return () => {
+      clearTimeout(timer);
+    };
   }, [user, statsLoaded, stepsToday, totalSteps, xp, level]);
+
+  // Handle immediate save on unmount specifically
+  useEffect(() => {
+    return () => {
+      if (pendingStatsRef.current) {
+        saveStats(pendingStatsRef.current);
+      }
+    };
+  }, [user]);
 
   /* -----------------------------
         LOOT TABLE
@@ -367,17 +400,11 @@ export default function Home() {
     if (newUnlockedZones.length > prevUnlockedZones.length) {
       // Unlocked at least one new zone
       const newZone = newUnlockedZones[newUnlockedZones.length - 1];
-      setUnlockedZoneData(newZone);
-      setShowZoneModal(true);
-
-      // Persist unlock in Supabase seamlessly
-      if (user) {
-        supabase.from("zone_unlocks").insert({
-          user_id: user.id,
-          zone_id: newZone.id
-        }).then(({ error }) => {
-          if (error) console.error("Error saving zone unlock:", error);
-        });
+      
+      // If we need recovery, don't show the battle yet
+      if (!needsRecovery) {
+        setUnlockedZoneData(newZone);
+        setShowZoneModal(true);
       }
     }
 
@@ -387,17 +414,31 @@ export default function Home() {
       setTimeout(() => knightRef.current.classList.remove("knight-walk"), 300);
     }
 
-    /* XP SYSTEM */
-    setXp((prev) => prev + Math.round(amount * 0.1));
+    /* RECOVERY SYSTEM */
+    if (needsRecovery) {
+      const remaining = Math.max(0, recoveryStepsRemaining - amount);
+      setRecoveryStepsRemaining(remaining);
+      if (remaining === 0) {
+        setNeedsRecovery(false);
+      }
+    }
+
+    /* XP SYSTEM & STREAK MULTIPLIER */
+    const multiplier = streak >= 3 ? 1.1 : 1.0;
+    const gainedXp = Math.round(amount * 0.1 * multiplier);
+    setXp((prev) => prev + gainedXp);
 
     /* QUEST SYSTEM */
     if (activeQuest && !questCompleted) {
       setQuestProgress((prev) => {
+        const questGoal = Number(activeQuest.steps || 0);
+        if (questGoal <= 0) return 0; // Avoid logic for invalid quests
+
         const updated = prev + amount;
         if (updated >= questGoal && !questRewardGiven) {
           setQuestCompleted(true);
           setQuestRewardGiven(true);
-          setXp((prevXp) => prevXp + activeQuest.reward);
+          setXp((prevXp) => prevXp + (activeQuest.reward || 0));
 
           const item = rollLoot();
           addItem(item);
@@ -422,7 +463,8 @@ export default function Home() {
     if (guaranteedDrop || randomDrop) {
       const item = rollLoot();
       addItem(item);
-      alert(`🎒 Loot Found!\n${item.name} (${item.rarity})`);
+      // Removed alert as it can cause navigation/scroll glitches; use a toast if available
+      console.log(`🎒 Loot Found: ${item.name}`);
     }
   };
 
@@ -431,19 +473,27 @@ export default function Home() {
   ------------------------------*/
   const simulateSteps = () => {
     const fakeSteps = 5000;
-    setStepsToday((prev) => prev + fakeSteps);
-    setTotalSteps((prev) => prev + fakeSteps);
-    handleStepGain(fakeSteps);
+    // Functional updates to ensure we always use the latest values
+    setStepsToday((prev) => {
+      const net = prev + fakeSteps;
+      setTotalSteps((tPrev) => {
+        const tNet = tPrev + fakeSteps;
+        // Trigger the logic based on the calculated net values
+        handleStepGain(fakeSteps, tNet);
+        return tNet;
+      });
+      return net;
+    });
   };
 
   /* -----------------------------
         UI VALUES
   ------------------------------*/
   const xpToNext = getXpRequired(level);
-  const xpPercent = Math.min(100, Math.round((xp / xpToNext) * 100));
+  const xpPercent = Math.min(100, Math.round(((xp || 0) / (xpToNext || 1)) * 100));
 
-  const questGoal = Number(activeQuest?.steps || 0);
-  const questPercent = activeQuest
+  const questGoal = activeQuest ? Number(activeQuest.steps || 0) : 0;
+  const questPercent = (activeQuest && questGoal > 0)
     ? Math.min(100, Math.round((questProgress / questGoal) * 100))
     : 0;
 
@@ -590,6 +640,16 @@ export default function Home() {
           </button>
         </section>
 
+        {/* RECOVERY BANNER */}
+        {needsRecovery && (
+          <section className="recovery-card animate-pulse">
+            <div className="recovery-glow" />
+            <p className="recovery-text">
+              ❤️ Recuperating from last battle... {recoveryStepsRemaining} steps to full recovery.
+            </p>
+          </section>
+        )}
+
         {/* BOTTOM DETAILS CARD */}
         <section className="details-card">
           <p className="stat">
@@ -643,10 +703,10 @@ export default function Home() {
         </section>
       </div>
 
-      {showQuestModal && (
+      {showQuestModal && activeQuest && (
         <QuestCompleteModal
           quest={activeQuest}
-          xpGained={activeQuest.reward}
+          xpGained={activeQuest.reward || 0}
           itemDropped={recentRewardData}
           onClose={() => setShowQuestModal(false)}
         />
@@ -664,7 +724,15 @@ export default function Home() {
       {showZoneModal && unlockedZoneData && (
         <ZoneUnlockModal
           zone={unlockedZoneData}
-          onClose={() => setShowZoneModal(false)}
+          onWin={() => {
+            setShowZoneModal(false);
+            // Already persisted in handleStepGain detection, but we can add a toast here
+          }}
+          onLose={() => {
+            setShowZoneModal(false);
+            setNeedsRecovery(true);
+            setRecoveryStepsRemaining(100);
+          }}
         />
       )}
     </div>

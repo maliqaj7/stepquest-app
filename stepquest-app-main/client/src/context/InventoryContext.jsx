@@ -1,18 +1,8 @@
-// src/context/InventoryContext.jsx
-import { createContext, useContext, useState, useMemo, useEffect } from "react";
+import { createContext, useContext, useState, useMemo, useEffect, useRef } from "react";
+import { useQuest } from "./QuestContext";
+import { useAuth } from "./AuthContext";
 
 const InventoryContext = createContext(null);
-
-/* ============================================
-   BASE PLAYER STATS — Before equipment bonuses
-   ============================================ */
-const BASE_STATS = {
-  atk: 5,
-  def: 5,
-  spd: 5,
-  luck: 5,
-  end: 5,
-};
 
 /* ============================================
    ITEM RARITY COLORS (Pixel RPG Style)
@@ -26,21 +16,54 @@ const RARITY_COLORS = {
   Mythic: "#ff1744",
 };
 
-export function InventoryProvider({ children }) {
-  const [inventory, setInventory] = useState(() => {
-    try {
-      const stored = window.localStorage.getItem("sq_inventory");
-      return stored ? JSON.parse(stored) : [];
-    } catch (err) {
-      console.warn("Failed to parse inventory from storage:", err);
-      return [];
-    }
-  });
+// Synchronous helper for inventory read/migrate
+const getInitialInventory = (userId) => {
+  if (!userId) return [];
+  try {
+    const scopedKey = `sq_${userId}_inventory`;
+    const oldKey = "sq_inventory";
+    
+    const scopedStored = window.localStorage.getItem(scopedKey);
+    const oldStored = window.localStorage.getItem(oldKey);
 
-  // Sync inventory to localStorage whenever it changes
+    if (oldStored && !scopedStored) {
+      // Migrate old inventory to new user-scoped key
+      window.localStorage.setItem(scopedKey, oldStored);
+      window.localStorage.removeItem(oldKey);
+      return JSON.parse(oldStored) || [];
+    } else if (scopedStored) {
+      return JSON.parse(scopedStored) || [];
+    }
+  } catch (err) {
+    console.warn("Failed to parse initial inventory:", err);
+  }
+  return [];
+};
+
+export function InventoryProvider({ children }) {
+  const { baseStats } = useQuest();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  const [inventory, setInventory] = useState(() => getInitialInventory(userId));
+  const loadUserIdRef = useRef(userId);
+
+  // ─── LOAD USER-SCOPED INVENTORY WHEN USER CHANGES AT RUNTIME ───
   useEffect(() => {
-    window.localStorage.setItem("sq_inventory", JSON.stringify(inventory));
-  }, [inventory]);
+    // Note: since initial load is synchronous, this is primarily for 
+    // when a user logs out and another user logs in without refreshing.
+    if (userId !== loadUserIdRef.current) {
+      setInventory(getInitialInventory(userId));
+      loadUserIdRef.current = userId;
+    }
+  }, [userId]);
+
+  // ─── PERSIST TO USER-SCOPED KEY ON EVERY CHANGE ───
+  useEffect(() => {
+    if (!userId || userId !== loadUserIdRef.current) return;
+    const key = `sq_${userId}_inventory`;
+    window.localStorage.setItem(key, JSON.stringify(inventory));
+  }, [inventory, userId]);
 
   /* ADD ITEM — Handles deep copy & validation */
   const addItem = (item) => {
@@ -63,7 +86,7 @@ export function InventoryProvider({ children }) {
     setInventory([]);
   };
 
-  /* BASE + ITEM BONUS STATS */
+  /* BASE (from QuestContext) + ITEM BONUS STATS */
   const totalStats = useMemo(() => {
     const bonus = { atk: 0, def: 0, spd: 0, luck: 0, end: 0 };
 
@@ -78,13 +101,13 @@ export function InventoryProvider({ children }) {
     });
 
     return {
-      atk: BASE_STATS.atk + bonus.atk,
-      def: BASE_STATS.def + bonus.def,
-      spd: BASE_STATS.spd + bonus.spd,
-      luck: BASE_STATS.luck + bonus.luck,
-      end: BASE_STATS.end + bonus.end,
+      atk: baseStats.atk + bonus.atk,
+      def: baseStats.def + bonus.def,
+      spd: baseStats.spd + bonus.spd,
+      luck: baseStats.luck + bonus.luck,
+      end: baseStats.end + bonus.end,
     };
-  }, [inventory]);
+  }, [inventory, baseStats]);
 
   return (
     <InventoryContext.Provider

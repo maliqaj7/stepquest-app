@@ -50,17 +50,16 @@ export default function Friends() {
       <h1 className="page-title">Friends</h1>
 
       <div className="card">
-        <p className="stat">
-          Add friends by email (prototype). Validates against existing users.
+        <p className="stat" style={{ marginBottom: "0.75rem" }}>
+          Add friends by email to build your party.
         </p>
 
         <form
           onSubmit={handleAdd}
           style={{
-            marginTop: "0.75rem",
             display: "flex",
             flexDirection: "column",
-            gap: "0.5rem",
+            gap: "0.75rem",
           }}
         >
           <input
@@ -112,18 +111,10 @@ export default function Friends() {
                 </span>
               </p>
               <button 
-                className="btn-primary" 
-                style={{ 
-                  background: "rgba(239, 68, 68, 0.2)", 
-                  color: "#fca5a5", 
-                  border: "1px solid rgba(239, 68, 68, 0.5)",
-                  padding: "0.3rem 0.6rem", 
-                  minHeight: "auto",
-                  fontSize: "0.8rem"
-                }}
+                className="remove-item-btn" 
                 onClick={() => handleRemove(f.id)}
               >
-                Remove
+                ✖
               </button>
             </div>
           ))}
