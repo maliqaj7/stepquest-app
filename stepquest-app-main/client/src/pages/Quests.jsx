@@ -3,41 +3,64 @@ import "../components/Quest.css";
 
 
 // ================================
-// QUEST DATABASE (RPG Style)
+// BOUNTY DATABASE (Tavern Style)
 // ================================
 const quests = [
   {
     id: 1,
-    title: "Forest Walk",
+    title: "Clear the Thicket",
     steps: 1500,
     reward: 50,
     difficulty: "Easy",
+    flavor: "The village elder needs someone to trample the overgrown paths before the upcoming festival.",
+    loot: "Small chance for common items.",
   },
   {
     id: 2,
-    title: "Village Patrol",
-    steps: 3000,
-    reward: 100,
+    title: "Border Patrol",
+    steps: 3500,
+    reward: 120,
     difficulty: "Normal",
+    flavor: "Goblins have been spotted near the southern borders. Step heavily to scare them off.",
+    loot: "Chance for uncommon gear.",
   },
   {
     id: 3,
-    title: "Mountain Trail",
-    steps: 5000,
-    reward: 150,
+    title: "Mountain Summit Dash",
+    steps: 8000,
+    reward: 350,
     difficulty: "Hard",
+    flavor: "Only the swiftest heroes brave the Frostbite Peak. Are your legs up for the challenge?",
+    loot: "High chance for Rare Loot!",
   },
+  {
+    id: 4,
+    title: "Dragon's Errand",
+    steps: 12000,
+    reward: 600,
+    difficulty: "Epic",
+    flavor: "An ancient being requires a message delivered across the realm. Fail, and be scorched.",
+    loot: "Guaranteed Epic Item Drop!",
+  }
 ];
 
 // Difficulty colors (RPG style)
 const DIFFICULTY_COLORS = {
-  Easy: "#4caf50",
-  Normal: "#2196f3",
-  Hard: "#ff9800",
+  Easy: "#10b981",    // Emerald
+  Normal: "#3b82f6",  // Blue
+  Hard: "#f59e0b",    // Amber/Gold
+  Epic: "#a855f7",    // Purple
+};
+
+const DIFFICULTY_ICONS = {
+  Easy: "🟢",
+  Normal: "🔵",
+  Hard: "🟠",
+  Epic: "🟣",
 };
 
 export default function Quests() {
-  const { activeQuest, setActiveQuest } = useQuest();
+  const { activeQuest, setActiveQuest, questProgress } = useQuest();
 
   const startQuest = (quest) => {
     setActiveQuest(quest);
@@ -47,66 +70,91 @@ export default function Quests() {
     setActiveQuest(null);
   };
 
+  // Safe progress calculation
+  const currentGoal = activeQuest ? Number(activeQuest.steps || 0) : 0;
+  const currentProgress = Number(questProgress) || 0;
+  const progressPercent = currentGoal > 0 ? Math.min(100, Math.round((currentProgress / currentGoal) * 100)) : 0;
+
   return (
-    <div className="page">
-      <h1 className="page-title">Quest Board</h1>
+    <div className="page quests-page">
+      <div className="bounty-header-wrapper">
+        <h1 className="bounty-board-title">Tavern Bounty Board</h1>
+        <p className="bounty-board-subtitle">Accept a mandate and prove your worth on the roads.</p>
+      </div>
 
-      {/* ACTIVE QUEST PANEL */}
+      {/* ACTIVE QUEST: ROYAL MANDATE */}
       {activeQuest && (
-        <div className="card" style={{ marginBottom: "1rem" }}>
-          <h2 className="card-title">Current Quest</h2>
+        <div className="active-mandate">
+          <div className="mandate-header">
+            <h2 className="mandate-title">📜 Royal Mandate Accepted</h2>
+            <div className="wax-seal">★</div>
+          </div>
 
-          <p className="stat">
-            <span className="stat-highlight">{activeQuest.title}</span>
-          </p>
-          <p className="stat">Steps Required: {activeQuest.steps}</p>
-          <p className="stat">Reward: {activeQuest.reward} XP</p>
-          <p
-            className="stat"
-            style={{
-              color: DIFFICULTY_COLORS[activeQuest.difficulty],
-              fontWeight: "bold",
-            }}
-          >
-            Difficulty: {activeQuest.difficulty}
-          </p>
+          <div className="mandate-content">
+            <h3 className="mandate-quest-name">{activeQuest.title}</h3>
+            <p className="mandate-flavor">"{activeQuest.flavor}"</p>
+            
+            <div className="mandate-stats">
+              <div className="m-stat">
+                <span className="m-icon">🥾</span>
+                <div>
+                  <p className="m-label">Task Progress</p>
+                  <p className="m-value">{currentProgress.toLocaleString()} / {currentGoal.toLocaleString()} Steps</p>
+                </div>
+              </div>
+              <div className="m-stat">
+                <span className="m-icon">✨</span>
+                <div>
+                  <p className="m-label">Bounty Reward</p>
+                  <p className="m-value">{activeQuest.reward} XP</p>
+                </div>
+              </div>
+            </div>
 
-          <button className="btn-secondary" onClick={cancelQuest} style={{ marginTop: "0.5rem" }}>
-            Cancel Quest
-          </button>
+            <div className="mandate-progress-bar">
+              <div className="mandate-progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+
+            <button className="btn-cancel-mandate" onClick={cancelQuest}>
+              Abandon Mandate
+            </button>
+          </div>
         </div>
       )}
 
-      {/* QUEST LIST */}
-      <div className="card-grid">
+      {/* BOUNTY BOARD */}
+      <div className="bounty-board">
         {quests.map((q) => {
           const isActive = activeQuest && activeQuest.id === q.id;
 
           return (
-            <div key={q.id} className="card quest-card">
-              <div className="card-header">
-                <h2 className="card-title">{q.title}</h2>
+            <div key={q.id} className={`bounty-poster ${isActive ? "poster-taken" : ""}`}>
+              <div className="poster-pin" />
+              
+              <div className="poster-header">
+                <h2 className="poster-title">{q.title}</h2>
+                <div className="poster-difficulty" style={{ color: DIFFICULTY_COLORS[q.difficulty] }}>
+                  {DIFFICULTY_ICONS[q.difficulty]} {q.difficulty}
+                </div>
               </div>
 
-              <p className="stat">Steps Required: {q.steps}</p>
-              <p className="stat">Reward: {q.reward} XP</p>
-
-              {/* Difficulty label */}
-              <p
-                className="quest-difficulty"
-                style={{ color: DIFFICULTY_COLORS[q.difficulty] }}
-              >
-                {q.difficulty}
-              </p>
+              <p className="poster-flavor">"{q.flavor}"</p>
+              
+              <div className="poster-details">
+                <p><strong>Req:</strong> {q.steps.toLocaleString()} Steps</p>
+                <p><strong>Bounty:</strong> {q.reward} XP</p>
+                {q.loot && <p className="poster-loot">🎁 {q.loot}</p>}
+              </div>
 
               <button
-                className="btn-secondary"
+                className="btn-accept-bounty"
                 onClick={() => startQuest(q)}
                 disabled={isActive}
-                style={isActive ? { opacity: 0.6, cursor: "default" } : {}}
               >
-                {isActive ? "Active Quest" : "Start Quest"}
+                {isActive ? "ACCEPTED" : "Tear off & Accept"}
               </button>
+
+              {isActive && <div className="stamp-taken">TAKEN</div>}
             </div>
           );
         })}

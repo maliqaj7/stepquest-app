@@ -6,6 +6,8 @@ import { useEnvironment } from "../hooks/useEnvironment";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { useState } from "react";
+import ZoneUnlockModal from "../components/ZoneUnlockModal";
 
 const getKnightIcon = () =>
   new L.Icon({
@@ -26,8 +28,9 @@ const getZoneIcon = (emoji, unlocked) =>
   });
 
 export default function Map() {
-  const { totalSteps } = useQuest();
+  const { totalSteps, setXp } = useQuest();
   const { city, lat, lon, loading } = useEnvironment();
+  const [selectedReplayZone, setSelectedReplayZone] = useState(null);
 
   if (loading || !lat || !lon) {
     return (
@@ -49,20 +52,29 @@ export default function Map() {
 
   // Calculate coordinates radiating outward from the user
   const userPos = [lat, lon];
-  const offsets = [
-    [0.003, 0.003],    // Zone 1
-    [0.007, -0.004],   // Zone 2
-    [0.015, 0.002],    // Zone 3
-    [0.018, 0.012],    // Zone 4
-    [0.025, -0.008],   // Zone 5 (Citadel)
-  ];
+  
+  // Golden Angle Spiral distribution for 10km radius
+  const MAX_RADIUS_KM = 10;
+  const DEG_PER_KM = 1 / 111.32; // Approx degrees per km for latitude
+  const MAX_RADIUS_DEG = MAX_RADIUS_KM * DEG_PER_KM;
 
   const mappedZones = localizedZones.map((z, i) => {
-    // Safety fallback to prevent component crash if offset is missing
-    const offset = offsets[i] || [0.03 + i * 0.01, 0.03 + i * 0.01];
+    if (i === 0) return { ...z, coords: [lat, lon] };
+    
+    // Golden angle in radians: (3 - sqrt(5)) * PI ≈ 137.5 degrees
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    const angle = i * goldenAngle;
+    
+    // Uniform area distribution: r = sqrt(i / total) * MaxR
+    const r = Math.sqrt(i / (localizedZones.length - 1)) * MAX_RADIUS_DEG;
+    
+    const latOffset = r * Math.cos(angle);
+    // Compensate longitude for latitude narrowing towards poles
+    const lonOffset = (r * Math.sin(angle)) / Math.cos((lat * Math.PI) / 180);
+    
     return {
       ...z,
-      coords: [lat + offset[0], lon + offset[1]],
+      coords: [lat + latOffset, lon + lonOffset],
     };
   });
 
@@ -95,7 +107,7 @@ export default function Map() {
       <div style={{ flex: 1, position: "relative" }}>
         <MapContainer
           center={userPos}
-          zoom={14}
+          zoom={12}
           style={{ width: "100%", height: "100vh" }}
           zoomControl={false}
         >
@@ -128,7 +140,18 @@ export default function Map() {
                     <h3 style={{ margin: "0 0 5px 0", fontSize: "1rem" }}>{zone.name}</h3>
                     <p style={{ margin: "0 0 5px 0", fontSize: "0.8rem" }}>{zone.description}</p>
                     {unlocked ? (
-                      <strong style={{ color: "green" }}>✅ Unlocked!</strong>
+                      <div style={{ marginTop: "8px" }}>
+                        <strong style={{ color: "green", display: "block", marginBottom: "4px" }}>✅ Unlocked!</strong>
+                        {zone.bossName && (
+                          <button 
+                            className="btn-primary" 
+                            style={{ fontSize: "0.7rem", padding: "4px 8px", width: "100%" }}
+                            onClick={() => setSelectedReplayZone(zone)}
+                          >
+                            ⚔️ Rebattle Boss
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <em style={{ color: "red" }}>Requires {zone.requiredSteps} steps</em>
                     )}
@@ -139,6 +162,22 @@ export default function Map() {
           })}
         </MapContainer>
       </div>
+
+      {selectedReplayZone && (
+        <ZoneUnlockModal
+          zone={selectedReplayZone}
+          isReplay={true}
+          onWin={() => {
+            setSelectedReplayZone(null);
+            setXp(prev => prev + 50); // Small XP reward for replay
+            alert(`Victory! You've proven your growth. (+50 XP)`);
+          }}
+          onLose={() => {
+            setSelectedReplayZone(null);
+            alert("The boss stands firm. Train harder and return later!");
+          }}
+        />
+      )}
     </div>
   );
 }

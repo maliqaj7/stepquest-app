@@ -91,22 +91,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 0.85rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.05);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  color: var(--text-secondary);
-  transition: var(--transition-fast);
-  margin-bottom: 2rem;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  margin-bottom: 1.5rem;
+  white-space: nowrap;
 }
 
 .upload-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(251, 191, 36, 0.1);
   border-color: var(--gold);
   color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.1);
+}
+
+.upload-btn input {
+  display: none;
 }
 
 .avatar-presets {
@@ -257,11 +264,36 @@
   box-shadow: 0 6px 16px rgba(251, 191, 36, 0.5);
 }
 
-.stat-plus-btn:disabled {
+.stat-plus-btn:disabled,
+.stat-minus-btn:disabled {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.2);
   cursor: not-allowed;
   box-shadow: none;
+  border-color: transparent;
+}
+
+.stat-minus-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-minus-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: scale(1.05);
 }
 
 .stat-hint {

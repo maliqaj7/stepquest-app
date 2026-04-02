@@ -298,11 +298,29 @@
   filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.4));
 }
 
+.player-visual {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.1), transparent 70%);
+  border-radius: var(--radius-lg);
+}
+
+.player-avatar-combat {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--sky);
+  filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.3));
+}
+
 .player-label {
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--sky);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 /* BATTLE LOG */

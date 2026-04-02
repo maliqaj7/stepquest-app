@@ -12,6 +12,7 @@ import ZoneUnlockModal from "../components/ZoneUnlockModal";
 import { ZONES } from "../data/zones";
 import { useEnvironment } from "../hooks/useEnvironment";
 import { getHeroProgression } from "../data/progression";
+import { rollLoot } from "../data/items";
 import "../components/Modals.css";
 
 // Logic for dynamic XP scaling
@@ -34,7 +35,9 @@ export default function Home() {
     xp,
     setXp,
     dailyGoal,
-    setDailyGoal
+    setDailyGoal,
+    questProgress,
+    setQuestProgress
   } = useQuest();
   const { addItem } = useInventory();
   const { unlock } = useAchievements();
@@ -42,7 +45,6 @@ export default function Home() {
 
   // Local UI state
   const [streak, setStreak] = useState(0);
-  const [questProgress, setQuestProgress] = useState(0);
   const [questCompleted, setQuestCompleted] = useState(false);
   const [questRewardGiven, setQuestRewardGiven] = useState(false);
 
@@ -282,32 +284,7 @@ export default function Home() {
     };
   }, [user]);
 
-  /* -----------------------------
-        LOOT TABLE
-  ------------------------------*/
-  const LOOT_TABLE = [
-    { name: "Traveler Boots", rarity: "Uncommon", icon: "🥾", stats: { spd: 1 } },
-    { name: "Bronze Sword", rarity: "Common", icon: "🗡️", stats: { atk: 1 } },
-    { name: "Guardian Shield", rarity: "Rare", icon: "🛡️", stats: { def: 2 } },
-    { name: "Crystal Amulet", rarity: "Epic", icon: "🔮", stats: { luck: 2 } },
-    { name: "Endless Cloak", rarity: "Legendary", icon: "🧥", stats: { end: 3 } },
-    {
-      name: "Mythic Sun Relic",
-      rarity: "Mythic",
-      icon: "☀️",
-      stats: { atk: 2, def: 2, spd: 2, luck: 2, end: 2 },
-    },
-  ];
 
-  const rollLoot = () => {
-    const r = Math.random();
-    if (r < 0.5) return LOOT_TABLE[0];
-    if (r < 0.75) return LOOT_TABLE[1];
-    if (r < 0.88) return LOOT_TABLE[2];
-    if (r < 0.96) return LOOT_TABLE[3];
-    if (r < 0.99) return LOOT_TABLE[4];
-    return LOOT_TABLE[5];
-  };
 
   /* -----------------------------
         RESET QUEST WHEN SWITCHED
@@ -356,6 +333,15 @@ export default function Home() {
       // Update states
       setXp(leftoverXp);
       setLevel(newLevel);
+
+      // 🎁 Guaranteed Reward every 2 levels
+      if (newLevel % 2 === 0) {
+        const bonusItem = rollLoot(newLevel);
+        addItem(bonusItem);
+        console.log(`🎁 Level Up Reward: ${bonusItem.name}`);
+        setRecentRewardData(bonusItem);
+        setShowQuestModal(true); // Reuse the quest modal to show the shiny new item
+      }
 
       // Trigger Modal
       setRecentLevelData({
@@ -440,7 +426,7 @@ export default function Home() {
           setQuestRewardGiven(true);
           setXp((prevXp) => prevXp + (activeQuest.reward || 0));
 
-          const item = rollLoot();
+          const item = rollLoot(level);
           addItem(item);
 
           setRecentRewardData(item);
@@ -461,7 +447,7 @@ export default function Home() {
     const randomDrop = Math.random() < 0.05;
 
     if (guaranteedDrop || randomDrop) {
-      const item = rollLoot();
+      const item = rollLoot(level);
       addItem(item);
       // Removed alert as it can cause navigation/scroll glitches; use a toast if available
       console.log(`🎒 Loot Found: ${item.name}`);
@@ -726,12 +712,22 @@ export default function Home() {
           zone={unlockedZoneData}
           onWin={() => {
             setShowZoneModal(false);
-            // Already persisted in handleStepGain detection, but we can add a toast here
+            const bossXp = 500;
+            setXp(prev => prev + bossXp);
+            
+            // Boss loot!
+            const bossLoot = rollLoot(level);
+            addItem(bossLoot);
+            setRecentRewardData(bossLoot);
+            setShowQuestModal(true); // Reuse modal to show loot
+            
+            console.log(`🏆 Boss Defeated! Gained ${bossXp} XP and ${bossLoot.name}`);
           }}
           onLose={() => {
             setShowZoneModal(false);
             setNeedsRecovery(true);
-            setRecoveryStepsRemaining(100);
+            setRecoveryStepsRemaining(250); // Increased recovery for boss loss
+            console.log("💀 Boss defeated you. Recovery needed.");
           }}
         />
       )}

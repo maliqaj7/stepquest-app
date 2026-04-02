@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuest } from "../context/QuestContext";
 import { useAuth } from "../context/AuthContext";
 import "./ProfilePage.css";
@@ -8,8 +8,63 @@ import knight3 from "../assets/Female Knight.png";
 import knight4 from "../assets/Goblin.jpg";
 
 export default function ProfilePage() {
-  const { baseStats, availablePoints, upgradeStat, level } = useQuest();
+  const { baseStats, availablePoints, level, commitStats, selectedAvatar, setSelectedAvatar } = useQuest();
   const { user } = useAuth();
+  
+  // Track points added *this session*
+  const [sessionAllocations, setSessionAllocations] = useState({});
+  const allocationsRef = useRef(sessionAllocations);
+
+  // Sync ref with state
+  useEffect(() => {
+    allocationsRef.current = sessionAllocations;
+  }, [sessionAllocations]);
+
+  // Commit on unmount (navigation)
+  useEffect(() => {
+    return () => {
+      const current = allocationsRef.current;
+      const hasChanges = Object.values(current).some(v => v > 0);
+      if (hasChanges) {
+        commitStats(current);
+      }
+    };
+  }, [commitStats]);
+
+  // Commit on refresh/close
+  useEffect(() => {
+    const handleUnload = () => {
+      const current = allocationsRef.current;
+      const hasChanges = Object.values(current).some(v => v > 0);
+      if (hasChanges) {
+        commitStats(current);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, [commitStats]);
+
+  const totalSessionSpent = Object.values(sessionAllocations).reduce((a, b) => a + b, 0);
+  const effectiveAvailablePoints = availablePoints - totalSessionSpent;
+
+  const handleAdd = (stat) => {
+    if (effectiveAvailablePoints > 0) {
+      setSessionAllocations(prev => ({
+        ...prev,
+        [stat]: (prev[stat] || 0) + 1
+      }));
+    }
+  };
+
+  const handleRemove = (stat) => {
+    if (sessionAllocations[stat] > 0) {
+      setSessionAllocations(prev => ({
+        ...prev,
+        [stat]: prev[stat] - 1
+      }));
+    }
+  };
+
   const userId = user?.id ?? "guest";
 
   const avatarList = [
@@ -18,26 +73,6 @@ export default function ProfilePage() {
     { id: 3, img: knight3, name: "Female Knight" },
     { id: 4, img: knight4, name: "Goblin Knight" },
   ];
-
-  const [selectedAvatar, setSelectedAvatar] = useState(knight1);
-
-  // Load avatar for specific user
-  useEffect(() => {
-    const key = `sq_${userId}_avatar`;
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      setSelectedAvatar(stored);
-    } else {
-      setSelectedAvatar(knight1);
-    }
-  }, [userId]);
-
-  // Save avatar choice
-  useEffect(() => {
-    if (userId === "guest") return;
-    const key = `sq_${userId}_avatar`;
-    localStorage.setItem(key, selectedAvatar);
-  }, [selectedAvatar, userId]);
 
   // Upload custom avatar
   const handleUpload = (e) => {
@@ -115,21 +150,30 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 
-                <div className="stat-controls">
-                  <span className="stat-number">{val}</span>
-                  <button 
-                    className="stat-plus-btn"
-                    disabled={availablePoints <= 0}
-                    onClick={() => upgradeStat(key)}
-                  >
-                    +
-                  </button>
-                </div>
+                  <div className="stat-controls">
+                    <button 
+                      className="stat-minus-btn"
+                      disabled={!sessionAllocations[key]}
+                      onClick={() => handleRemove(key)}
+                    >
+                      -
+                    </button>
+                    <span className="stat-number">
+                      {val + (sessionAllocations[key] || 0)}
+                    </span>
+                    <button 
+                      className="stat-plus-btn"
+                      disabled={effectiveAvailablePoints <= 0}
+                      onClick={() => handleAdd(key)}
+                    >
+                      +
+                    </button>
+                  </div>
               </div>
             ))}
           </div>
 
-          {availablePoints > 0 && (
+          {effectiveAvailablePoints > 0 && (
             <p className="stat-hint">
               You earn 2 skill points every time you level up!
             </p>

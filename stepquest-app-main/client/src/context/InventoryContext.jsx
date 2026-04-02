@@ -88,8 +88,8 @@ export function InventoryProvider({ children }) {
 
   /* BASE (from QuestContext) + ITEM BONUS STATS */
   const totalStats = useMemo(() => {
-    const bonus = { atk: 0, def: 0, spd: 0, luck: 0, end: 0 };
-
+    const bonus = { atk: 0, def: 0, spd: 0, luck: 0, end: 0, mag: 0 };
+    
     inventory.forEach((item) => {
       if (!item.stats) return;
 
@@ -106,6 +106,7 @@ export function InventoryProvider({ children }) {
       spd: baseStats.spd + bonus.spd,
       luck: baseStats.luck + bonus.luck,
       end: baseStats.end + bonus.end,
+      mag: baseStats.mag + bonus.mag,
     };
   }, [inventory, baseStats]);
 

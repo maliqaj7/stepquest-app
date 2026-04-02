@@ -36,6 +36,7 @@ export default function InventoryPage() {
           <p className="stat">SPD: <span className="stat-highlight">{totalStats.spd}</span></p>
           <p className="stat">LUCK: <span className="stat-highlight">{totalStats.luck}</span></p>
           <p className="stat">END: <span className="stat-highlight">{totalStats.end}</span></p>
+          <p className="stat">MAG: <span className="stat-highlight">{totalStats.mag}</span></p>
         </div>
       </div>
 
@@ -97,6 +98,7 @@ export default function InventoryPage() {
                     {item.stats.spd ? `+${item.stats.spd} SPD ` : ""}
                     {item.stats.luck ? `+${item.stats.luck} LUCK ` : ""}
                     {item.stats.end ? `+${item.stats.end} END ` : ""}
+                    {item.stats.mag ? `+${item.stats.mag} MAG ` : ""}
                   </p>
                 )}
               </div>

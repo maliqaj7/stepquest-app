@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
 
+import knight1 from "../assets/Knight.png";
+import knight2 from "../assets/Evil Knight.png";
+import knight3 from "../assets/Female Knight.png";
+import knight4 from "../assets/Goblin.jpg";
+
 const QuestContext = createContext();
 
-const DEFAULT_STATS = { atk: 5, def: 5, spd: 5, luck: 5, end: 5 };
+const DEFAULT_STATS = { atk: 5, def: 5, spd: 5, luck: 5, end: 5, mag: 5 };
 
 // Helper: safely read a number from localStorage
 const readNum = (key, fallback) => {
@@ -75,14 +80,23 @@ export function QuestProvider({ children }) {
 
   // ─── STATE (Synchronously initialized directly from localStorage) ───
   const [activeQuest, setActiveQuest] = useState(null);
+  const [questProgress, setQuestProgress] = useState(0);
   const [totalSteps, setTotalSteps] = useState(() => getInitialValue(userId, "total_steps", "total_steps", 0));
   const [stepsToday, setStepsToday] = useState(() => getInitialValue(userId, "steps_today", "steps_today", 0));
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [level, setLevel] = useState(() => getInitialValue(userId, "level", "level", 1));
   const [xp, setXp] = useState(() => getInitialValue(userId, "xp", "xp", 0));
   const [dailyGoal, setDailyGoal] = useState(() => getInitialValue(userId, "daily_goal", "daily_goal", 5000));
-  const [baseStats, setBaseStats] = useState(() => getInitialValue(userId, "base_stats", "base_stats", { ...DEFAULT_STATS }, true));
+  const [baseStats, setBaseStats] = useState(() => {
+    const val = getInitialValue(userId, "base_stats", "base_stats", { ...DEFAULT_STATS }, true);
+    return { ...DEFAULT_STATS, ...val };
+  });
   const [spentPoints, setSpentPoints] = useState(() => getInitialValue(userId, "spent_points", "spent_points", 0));
+  const [selectedAvatar, setSelectedAvatar] = useState(() => {
+    if (!userId) return knight1;
+    const key = `sq_${userId}_avatar`;
+    return window.localStorage.getItem(key) || knight1;
+  });
   const [completedQuests, setCompletedQuests] = useState([]);
 
   // ─── LOAD USER-SCOPED DATA WHEN USER CHANGES ───
@@ -95,6 +109,7 @@ export function QuestProvider({ children }) {
     if (!userId) {
       // Logged out → reset to defaults
       setActiveQuest(null);
+      setQuestProgress(0);
       setTotalSteps(0);
       setStepsToday(0);
       setLevel(1);
@@ -102,6 +117,7 @@ export function QuestProvider({ children }) {
       setDailyGoal(5000);
       setBaseStats({ ...DEFAULT_STATS });
       setSpentPoints(0);
+      setSelectedAvatar(knight1);
       setCompletedQuests([]);
       setStatsLoaded(false);
       return;
@@ -115,8 +131,11 @@ export function QuestProvider({ children }) {
     setDailyGoal(getInitialValue(userId, "daily_goal", "daily_goal", 5000));
     setBaseStats(getInitialValue(userId, "base_stats", "base_stats", { ...DEFAULT_STATS }, true));
     setSpentPoints(getInitialValue(userId, "spent_points", "spent_points", 0));
+    const avatarKey = `sq_${userId}_avatar`;
+    setSelectedAvatar(window.localStorage.getItem(avatarKey) || knight1);
     setCompletedQuests([]);
     setActiveQuest(null);
+    setQuestProgress(0);
     setStatsLoaded(false); // force Supabase reload for this user
   }, [userId]);
 
@@ -137,22 +156,42 @@ export function QuestProvider({ children }) {
     write(userKey(userId, "spent_points"), points);
   }, [userId]);
 
+  // Persist Avatar
+  useEffect(() => {
+    if (!userId) return;
+    const key = `sq_${userId}_avatar`;
+    window.localStorage.setItem(key, selectedAvatar);
+  }, [selectedAvatar, userId]);
+
   // Points calculation with safety check
   const safeSpent = isNaN(Number(spentPoints)) ? 0 : Number(spentPoints);
   const availablePoints = Math.max(0, (level - 1) * 2 - safeSpent);
 
-  const upgradeStat = useCallback((statName) => {
-    if (availablePoints <= 0) return;
+  const commitStats = useCallback((increments) => {
+    if (!userId) return;
     setBaseStats(prev => {
-      const newStats = { ...prev, [statName]: prev[statName] + 1 };
+      const newStats = { ...prev };
+      let totalAdded = 0;
+      Object.entries(increments).forEach(([stat, val]) => {
+        newStats[stat] = (newStats[stat] || 0) + val;
+        totalAdded += val;
+      });
+
       setSpentPoints(p => {
-        const newSpent = p + 1;
-        saveRpgStats(newStats, newSpent);
+        const newSpent = p + totalAdded;
+        write(userKey(userId, "base_stats"), newStats);
+        write(userKey(userId, "spent_points"), newSpent);
         return newSpent;
       });
+
       return newStats;
     });
-  }, [availablePoints, saveRpgStats]);
+  }, [userId]);
+
+  const upgradeStat = useCallback((statName) => {
+    if (availablePoints <= 0) return;
+    commitStats({ [statName]: 1 });
+  }, [availablePoints, commitStats]);
 
   const completeQuest = useCallback((quest) => {
     if (!quest) return;
@@ -165,16 +204,18 @@ export function QuestProvider({ children }) {
 
   const value = useMemo(() => ({
     activeQuest, setActiveQuest,
+    questProgress, setQuestProgress,
     totalSteps, setTotalSteps,
     stepsToday, setStepsToday,
     statsLoaded, setStatsLoaded,
     level, setLevel,
     xp, setXp,
     dailyGoal, setDailyGoal,
-    baseStats, availablePoints, upgradeStat,
+    baseStats, availablePoints, upgradeStat, commitStats,
+    selectedAvatar, setSelectedAvatar,
     completedQuests, completeQuest,
   }), [
-    activeQuest, totalSteps, stepsToday, statsLoaded,
+    activeQuest, questProgress, totalSteps, stepsToday, statsLoaded,
     level, xp, dailyGoal, baseStats, availablePoints,
     upgradeStat, completedQuests, completeQuest
   ]);
