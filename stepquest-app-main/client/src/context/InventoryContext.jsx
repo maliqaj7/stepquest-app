@@ -46,24 +46,24 @@ export function InventoryProvider({ children }) {
   const userId = user?.id ?? null;
 
   const [inventory, setInventory] = useState(() => getInitialInventory(userId));
-  const loadUserIdRef = useRef(userId);
+  const [loadedUserId, setLoadedUserId] = useState(userId);
 
   // ─── LOAD USER-SCOPED INVENTORY WHEN USER CHANGES AT RUNTIME ───
   useEffect(() => {
     // Note: since initial load is synchronous, this is primarily for 
     // when a user logs out and another user logs in without refreshing.
-    if (userId !== loadUserIdRef.current) {
+    if (userId !== loadedUserId) {
       setInventory(getInitialInventory(userId));
-      loadUserIdRef.current = userId;
+      setLoadedUserId(userId);
     }
-  }, [userId]);
+  }, [userId, loadedUserId]);
 
   // ─── PERSIST TO USER-SCOPED KEY ON EVERY CHANGE ───
   useEffect(() => {
-    if (!userId || userId !== loadUserIdRef.current) return;
+    if (!userId || userId !== loadedUserId) return;
     const key = `sq_${userId}_inventory`;
     window.localStorage.setItem(key, JSON.stringify(inventory));
-  }, [inventory, userId]);
+  }, [inventory, userId, loadedUserId]);
 
   /* ADD ITEM — Handles deep copy & validation */
   const addItem = (item) => {

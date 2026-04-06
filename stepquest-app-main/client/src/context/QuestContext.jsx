@@ -82,7 +82,17 @@ export function QuestProvider({ children }) {
   const [activeQuest, setActiveQuest] = useState(null);
   const [questProgress, setQuestProgress] = useState(0);
   const [totalSteps, setTotalSteps] = useState(() => getInitialValue(userId, "total_steps", "total_steps", 0));
-  const [stepsToday, setStepsToday] = useState(() => getInitialValue(userId, "steps_today", "steps_today", 0));
+  const [stepsToday, setStepsToday] = useState(() => {
+    const today = new Date().toLocaleDateString();
+    const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
+    if (lastDate && lastDate !== today) {
+      // New day -> reset local steps synchronously
+      window.localStorage.setItem(`sq_${userId}_steps_today`, "0");
+      window.localStorage.setItem(`sq_${userId}_last_date`, today);
+      return 0;
+    }
+    return getInitialValue(userId, "steps_today", "steps_today", 0);
+  });
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [level, setLevel] = useState(() => getInitialValue(userId, "level", "level", 1));
   const [xp, setXp] = useState(() => getInitialValue(userId, "xp", "xp", 0));
@@ -123,9 +133,19 @@ export function QuestProvider({ children }) {
       return;
     }
 
-    // Load this user's cached data directly using the safe initialization method
+    // Check daily reset on user change
+    const today = new Date().toLocaleDateString();
+    const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
+    let initSteps = getInitialValue(userId, "steps_today", "steps_today", 0);
+    
+    if (lastDate && lastDate !== today) {
+      initSteps = 0;
+      window.localStorage.setItem(`sq_${userId}_steps_today`, "0");
+      window.localStorage.setItem(`sq_${userId}_last_date`, today);
+    }
+
     setTotalSteps(getInitialValue(userId, "total_steps", "total_steps", 0));
-    setStepsToday(getInitialValue(userId, "steps_today", "steps_today", 0));
+    setStepsToday(initSteps);
     setLevel(getInitialValue(userId, "level", "level", 1));
     setXp(getInitialValue(userId, "xp", "xp", 0));
     setDailyGoal(getInitialValue(userId, "daily_goal", "daily_goal", 5000));
@@ -142,6 +162,15 @@ export function QuestProvider({ children }) {
   // ─── PERSIST TO USER-SCOPED LOCALSTORAGE ON EVERY CHANGE ───
   useEffect(() => {
     if (!userId || !statsLoaded) return;
+    const today = new Date().toLocaleDateString();
+    
+    // Check if the day rolled over WHILE the user was active
+    const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
+    if (lastDate && lastDate !== today) {
+      setStepsToday(0); // dynamically reset if midnight strikes
+    }
+
+    write(userKey(userId, "last_date"), today);
     write(userKey(userId, "total_steps"), totalSteps);
     write(userKey(userId, "steps_today"), stepsToday);
     write(userKey(userId, "level"), level);

@@ -1,31 +1,283 @@
 /* ========================================
-   QUEST CARDS — Premium Redesign
+   BOUNTY BOARD — Tavern Redesign
    ======================================== */
 
-.quest-difficulty {
-  display: inline-block;
-  font-weight: 700;
+.quests-page {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.bounty-header-wrapper {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.bounty-board-title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+}
+
+.bounty-board-subtitle {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+/* ========================================
+   ACTIVE MANDATE (Top Accepted Quest)
+   ======================================== */
+.active-mandate {
+  background: linear-gradient(135deg, rgba(20, 20, 25, 0.95), rgba(30, 30, 40, 0.95));
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 3rem;
+  box-shadow: 0 0 30px rgba(251, 191, 36, 0.15), inset 0 0 20px rgba(251, 191, 36, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.mandate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mandate-title {
+  font-family: var(--font-display);
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wax-seal {
+  background: #991b1b;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fca5a5;
+  font-size: 1.2rem;
+  box-shadow: inset 0 0 10px #7f1d1d, 0 4px 6px rgba(0,0,0,0.5);
+  border: 2px solid #b91c1c;
+  transform: rotate(-15deg);
+}
+
+.mandate-quest-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.mandate-flavor {
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.mandate-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.m-stat {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(0,0,0,0.3);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  flex: 1;
+}
+
+.m-icon {
+  font-size: 1.75rem;
+}
+
+.m-label {
   font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.3rem 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.m-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.mandate-progress-bar {
+  height: 12px;
+  background: rgba(0,0,0,0.5);
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.05);
-  margin-bottom: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.quest-card {
-  position: relative;
-  border-left: 4px solid var(--border-subtle);
-  transition: var(--transition-fast);
+.mandate-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  transition: width 0.4s ease;
 }
 
-.quest-card:hover {
-  border-left-color: var(--gold);
+.btn-cancel-mandate {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.card-grid {
+.btn-cancel-mandate:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+
+/* ========================================
+   BOUNTY BOARD (Unaccepted Quests)
+   ======================================== */
+.bounty-board {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  padding: 2rem;
+  background: #271c19; /* Dark wooden board feel */
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 10px 30px rgba(0,0,0,0.5);
+  border: 8px solid #3c2a21;
+}
+
+.bounty-poster {
+  background: #fdf5e6; /* Old parchment color */
+  color: #3e2723;      /* Dark ink text */
+  padding: 1.5rem 1.5rem 2rem;
+  border-radius: 2px;
+  box-shadow: 2px 4px 10px rgba(0,0,0,0.4);
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+}
+
+.bounty-poster:hover {
+  transform: translateY(-5px) rotate(-1deg);
+  box-shadow: 4px 8px 15px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+.poster-taken {
+  opacity: 0.5;
+  filter: grayscale(0.5);
+  pointer-events: none;
+}
+
+/* Push-pin aesthetic */
+.poster-pin {
+  width: 12px;
+  height: 12px;
+  background: #d97706; /* brass pin */
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-shadow: inset -2px -2px 4px rgba(0,0,0,0.5), 1px 2px 2px rgba(0,0,0,0.4);
+}
+
+.poster-header {
+  margin-top: 10px;
+  margin-bottom: 1rem;
+  text-align: center;
+  border-bottom: 1px dashed #bcaaa4;
+  padding-bottom: 10px;
+}
+
+.poster-title {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #1e0000;
+}
+
+.poster-difficulty {
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-top: 0.25rem;
+}
+
+.poster-flavor {
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1.5rem;
+  flex-grow: 1; /* Pushes the details to the bottom */
+}
+
+.poster-details p {
+  font-family: monospace;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+}
+
+.poster-loot {
+  font-weight: bold;
+  color: #15803d; /* Dark green for loot */
+  margin-top: 0.8rem;
+}
+
+.btn-accept-bounty {
+  width: 100%;
+  background: #7f1d1d; /* Deep red ink stamp color */
+  color: #fdf5e6;
+  border: none;
+  padding: 0.75rem;
+  margin-top: 1.5rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.btn-accept-bounty:hover {
+  background: #991b1b;
+}
+
+.stamp-taken {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-family: var(--font-display);
+  color: #dc2626;
+  font-size: 3rem;
+  font-weight: 900;
+  border: 4px solid #dc2626;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  opacity: 0.8;
+  pointer-events: none;
 }

@@ -107,7 +107,8 @@ export default function Home() {
       const dbLevel = data.level ?? 1;
       const dbDailyGoal = data.daily_goal ?? 5000;
 
-      setStepsToday(prev => Math.max(Number(prev) || 0, dbStepsToday));
+      // Only take Math.max if it is NOT a new day, otherwise hard reset to 0
+      setStepsToday(prev => isNewDay ? 0 : Math.max(Number(prev) || 0, dbStepsToday));
       setTotalSteps(prev => Math.max(Number(prev) || 0, dbTotalSteps));
       setXp(prev => Math.max(Number(prev) || 0, dbXp));
       setLevel(prev => Math.max(Number(prev) || 1, dbLevel));
