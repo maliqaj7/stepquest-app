@@ -39,10 +39,11 @@ function Toast({ message, type, duration, onRemove }) {
   };
 
   // Auto-close after duration
-  useState(() => {
+  useEffect(() => {
     const timer = setTimeout(handleClose, duration);
     return () => clearTimeout(timer);
-  }, [duration]);
+  }, [duration, onRemove]); // add onRemove to deps for safety
+
 
   const typeIcons = {
     success: "✨",

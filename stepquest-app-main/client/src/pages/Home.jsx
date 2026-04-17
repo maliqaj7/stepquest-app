@@ -39,8 +39,11 @@ export default function Home() {
     dailyGoal,
     setDailyGoal,
     questProgress,
-    setQuestProgress
+    setQuestProgress,
+    announcedZones,
+    setAnnouncedZones
   } = useQuest();
+
   const { addItem } = useInventory();
   const { unlock } = useAchievements();
   const { user } = useAuth(); // current logged‑in Supabase user
@@ -298,6 +301,33 @@ export default function Home() {
     };
   }, [user]);
 
+  // 🔹 CATCH-UP LOGIC: Trigger missed boss discoveries on reload/load
+  useEffect(() => {
+    if (!statsLoaded || !announcedZones || showZoneModal || needsRecovery) return;
+
+    // Find ALL zones that SHOULD be announced but aren't
+    const allPending = ZONES.filter(z => totalSteps >= z.requiredSteps && !announcedZones.includes(z.id));
+    
+    if (allPending.length > 0) {
+      // 1. Mark EVERYTHING as announced immediately to stop the loop
+      const allIds = allPending.map(z => z.id);
+      setAnnouncedZones(prev => [...new Set([...prev, ...allIds])]);
+
+      // 2. Only show the LATEST boss zone if there are multiple pending
+      // Reverse find to get the most advanced boss the hero just unlocked
+      const latestWithBoss = [...allPending].reverse().find(z => z.bossName);
+      
+      if (latestWithBoss) {
+        setUnlockedZoneData(latestWithBoss);
+        setShowZoneModal(true);
+      }
+    }
+  }, [statsLoaded, totalSteps, announcedZones, showZoneModal, needsRecovery]);
+  
+
+
+
+
 
 
   /* -----------------------------
@@ -394,20 +424,22 @@ export default function Home() {
     const newTotal = totalSteps + amount;
     const questGoal = Number(activeQuest?.steps || 0);
 
-    // ZONE UNLOCK DETECTION
-    const prevUnlockedZones = ZONES.filter(z => totalSteps >= z.requiredSteps);
-    const newUnlockedZones = ZONES.filter(z => newTotal >= z.requiredSteps);
+    // ZONE UNLOCK DETECTION (Batched)
+    const pendingInGain = ZONES.filter(z => newTotal >= z.requiredSteps && !announcedZones.includes(z.id));
 
-    if (newUnlockedZones.length > prevUnlockedZones.length) {
-      // Unlocked at least one new zone
-      const newZone = newUnlockedZones[newUnlockedZones.length - 1];
-      
-      // If we need recovery, don't show the battle yet
-      if (!needsRecovery) {
-        setUnlockedZoneData(newZone);
+    if (pendingInGain.length > 0 && !needsRecovery && !showZoneModal) {
+      const allIds = pendingInGain.map(z => z.id);
+      setAnnouncedZones(prev => [...new Set([...prev, ...allIds])]);
+
+      const latestBoss = [...pendingInGain].reverse().find(z => z.bossName);
+      if (latestBoss) {
+        setUnlockedZoneData(latestBoss);
         setShowZoneModal(true);
       }
     }
+
+
+
 
     // Pixel knight "walk" animation
     if (knightRef.current) {

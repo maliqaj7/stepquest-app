@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import { ZONES } from "../data/zones";
 
 import knight1 from "../assets/Knight.png";
 import knight2 from "../assets/Evil Knight.png";
@@ -108,6 +109,16 @@ export function QuestProvider({ children }) {
     return window.localStorage.getItem(key) || knight1;
   });
   const [completedQuests, setCompletedQuests] = useState([]);
+  const [announcedZones, setAnnouncedZones] = useState(() => {
+    const stored = getInitialValue(userId, "announced_zones", "announced_zones", null, true);
+    if (stored !== null) return stored;
+    // Fallback: if we have steps but no history, pre-fill to avoid "discovery spam"
+    const currentSteps = getInitialValue(userId, "total_steps", "total_steps", 0);
+    if (currentSteps > 0) {
+      return ZONES.filter(z => currentSteps >= z.requiredSteps).map(z => z.id);
+    }
+    return [];
+  });
 
   // ─── LOAD USER-SCOPED DATA WHEN USER CHANGES ───
   const prevUserIdRef = useRef(null);
@@ -129,6 +140,7 @@ export function QuestProvider({ children }) {
       setSpentPoints(0);
       setSelectedAvatar(knight1);
       setCompletedQuests([]);
+      setAnnouncedZones([]);
       setStatsLoaded(false);
       return;
     }
@@ -154,6 +166,16 @@ export function QuestProvider({ children }) {
     const avatarKey = `sq_${userId}_avatar`;
     setSelectedAvatar(window.localStorage.getItem(avatarKey) || knight1);
     setCompletedQuests([]);
+    
+    const hist = getInitialValue(userId, "announced_zones", "announced_zones", null, true);
+    if (hist !== null) {
+      setAnnouncedZones(hist);
+    } else {
+      // Catch-up if history is missing but steps are present
+      const curSteps = getInitialValue(userId, "total_steps", "total_steps", 0);
+      setAnnouncedZones(ZONES.filter(z => curSteps >= z.requiredSteps).map(z => z.id));
+    }
+
     setActiveQuest(null);
     setQuestProgress(0);
     setStatsLoaded(false); // force Supabase reload for this user
@@ -161,22 +183,28 @@ export function QuestProvider({ children }) {
 
   // ─── PERSIST TO USER-SCOPED LOCALSTORAGE ON EVERY CHANGE ───
   useEffect(() => {
-    if (!userId || !statsLoaded) return;
-    const today = new Date().toISOString().split("T")[0];
+    if (!userId) return;
     
-    // Check if the day rolled over WHILE the user was active
-    const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
-    if (lastDate && lastDate !== today) {
-      setStepsToday(0); // dynamically reset if midnight strikes
-    }
+    if (statsLoaded) {
+      const today = new Date().toISOString().split("T")[0];
+      
+      // Check if the day rolled over WHILE the user was active
+      const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
+      if (lastDate && lastDate !== today) {
+        setStepsToday(0); // dynamically reset if midnight strikes
+      }
 
-    write(userKey(userId, "last_date"), today);
-    write(userKey(userId, "total_steps"), totalSteps);
-    write(userKey(userId, "steps_today"), stepsToday);
-    write(userKey(userId, "level"), level);
-    write(userKey(userId, "xp"), xp);
-    write(userKey(userId, "daily_goal"), dailyGoal);
-  }, [userId, statsLoaded, totalSteps, stepsToday, level, xp, dailyGoal]);
+      write(userKey(userId, "last_date"), today);
+      write(userKey(userId, "total_steps"), totalSteps);
+      write(userKey(userId, "steps_today"), stepsToday);
+      write(userKey(userId, "level"), level);
+      write(userKey(userId, "xp"), xp);
+      write(userKey(userId, "daily_goal"), dailyGoal);
+    }
+    
+    // Always persist announced_zones independently of statsLoaded to ensure discovery is never lost
+    write(userKey(userId, "announced_zones"), announcedZones);
+  }, [userId, statsLoaded, totalSteps, stepsToday, level, xp, dailyGoal, announcedZones]);
 
   // ─── RPG STAT PERSISTENCE ───
   const saveRpgStats = useCallback((stats, points) => {
@@ -243,10 +271,11 @@ export function QuestProvider({ children }) {
     baseStats, availablePoints, upgradeStat, commitStats,
     selectedAvatar, setSelectedAvatar,
     completedQuests, completeQuest,
+    announcedZones, setAnnouncedZones,
   }), [
     activeQuest, questProgress, totalSteps, stepsToday, statsLoaded,
     level, xp, dailyGoal, baseStats, availablePoints,
-    upgradeStat, completedQuests, completeQuest
+    upgradeStat, completedQuests, completeQuest, announcedZones
   ]);
 
   return (
