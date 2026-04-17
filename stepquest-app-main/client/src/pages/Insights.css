@@ -306,16 +306,67 @@
 .ins-ref-label {
   position: absolute;
   left: 0;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   font-weight: 700;
-  background: rgba(5,5,7,0.8);
-  padding: 0 4px;
-  border-radius: 3px;
+  background: rgba(5,5,7,0.7);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.05);
+  backdrop-filter: blur(4px);
+  z-index: 10;
 }
 
-.ins-ref-label--top { top: -9px; }
-.ins-ref-label--mid { top: calc(50% - 9px); }
+.ins-ref-label--top { top: -11px; }
+.ins-ref-label--mid { top: calc(50% - 11px); }
+
+/* HTML Tooltip (Fixed distortion) */
+.ins-tooltip {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  background: rgba(14,12,20,0.95);
+  border: 1px solid rgba(56,189,248,0.5);
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.6), 0 0 15px rgba(56,189,248,0.2);
+  transform: translate(-50%, -125%);
+  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 80px;
+}
+
+.ins-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(56,189,248,0.5);
+}
+
+.ins-tooltip-val {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.ins-tooltip-label {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
 
 .ins-svg {
   width: 100%;
@@ -325,6 +376,7 @@
   position: relative;
   z-index: 2;
 }
+
 
 /* X-axis labels */
 .ins-x-labels {

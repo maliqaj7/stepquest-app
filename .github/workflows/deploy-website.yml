@@ -31,7 +31,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./stepquest-website
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Build Website
         working-directory: ./stepquest-website

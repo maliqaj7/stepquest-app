@@ -176,6 +176,20 @@ export default function Insights() {
             <span className="ins-ref-label ins-ref-label--mid">Avg {avgValue.toLocaleString()}</span>
           </div>
 
+          {/* New HTML Tooltip (to avoid SVG morphing) */}
+          {hoveredIdx !== null && (
+            <div 
+              className="ins-tooltip"
+              style={{ 
+                left: `${(hoveredIdx / (stepsData.length > 1 ? stepsData.length - 1 : 1)) * 100}%`,
+                top: `${100 - (stepsData[hoveredIdx] / (bestValue || 1)) * 90}%`
+              }}
+            >
+              <div className="ins-tooltip-val">{stepsData[hoveredIdx].toLocaleString()}</div>
+              <div className="ins-tooltip-label">{labels[hoveredIdx % labels.length]}</div>
+            </div>
+          )}
+
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -192,7 +206,7 @@ export default function Insights() {
                 <stop offset="100%" stopColor="#38bdf8" />
               </linearGradient>
               <filter id="glowFilter">
-                <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                <feGaussianBlur stdDeviation="1" result="coloredBlur" />
                 <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
               </filter>
             </defs>
@@ -206,11 +220,24 @@ export default function Insights() {
                   points={linePoints}
                   fill="none"
                   stroke="url(#lineGrad)"
-                  strokeWidth="2"
+                  strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   filter="url(#glowFilter)"
                 />
+                {/* Interaction Bars (Invisible vertical bars for easier hover) */}
+                {stepsData.map((_, idx) => (
+                  <rect
+                    key={`trigger-${idx}`}
+                    x={(idx / (stepsData.length > 1 ? stepsData.length - 1 : 1)) * 100 - (100 / stepsData.length / 2)}
+                    y="0"
+                    width={100 / stepsData.length}
+                    height="100"
+                    fill="transparent"
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    style={{ cursor: "crosshair" }}
+                  />
+                ))}
                 {/* Dots */}
                 {stepsData.map((value, idx) => {
                   const maxForChart = bestValue || 1;
@@ -219,26 +246,15 @@ export default function Insights() {
                   const isBest = idx === bestIdx;
                   const isHovered = idx === hoveredIdx;
                   return (
-                    <g key={idx} onMouseEnter={() => setHoveredIdx(idx)} style={{ cursor: "crosshair" }}>
+                    <g key={idx} style={{ pointerEvents: "none" }}>
                       <circle
                         cx={x} cy={y}
-                        r={activeTab === "Day" ? 0.9 : isBest || isHovered ? 2.5 : 1.8}
+                        r={activeTab === "Day" ? 0.6 : isBest || isHovered ? 2 : 1.2}
                         fill={isBest ? "#fbbf24" : isHovered ? "#38bdf8" : "#050507"}
                         stroke={isBest ? "#fbbf24" : "#38bdf8"}
-                        strokeWidth={isBest ? 2 : 1.5}
+                        strokeWidth={isBest ? 1.5 : 1}
                         filter={isBest || isHovered ? "url(#glowFilter)" : undefined}
                       />
-                      {/* Tooltip on hover */}
-                      {isHovered && (
-                        <>
-                          <rect x={Math.min(x - 8, 82)} y={y - 14} width="18" height="9" rx="2"
-                            fill="rgba(14,12,20,0.9)" stroke="rgba(56,189,248,0.4)" strokeWidth="0.5" />
-                          <text x={Math.min(x + 1, 91)} y={y - 7.5} textAnchor="middle"
-                            fill="#f1f5f9" fontSize="4.5" fontWeight="700">
-                            {value.toLocaleString()}
-                          </text>
-                        </>
-                      )}
                     </g>
                   );
                 })}
@@ -246,11 +262,12 @@ export default function Insights() {
             )}
 
             {displayTotal === 0 && (
-              <text x="50" y="55" textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="7">
+              <text x="50" y="55" textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="6" fontFamily="sans-serif">
                 Start walking to see data
               </text>
             )}
           </svg>
+
 
           {/* X-axis labels */}
           <div className="ins-x-labels">
