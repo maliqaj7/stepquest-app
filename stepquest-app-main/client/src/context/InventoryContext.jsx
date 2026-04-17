@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo, useEffect, useRef } from "react";
 import { useQuest } from "./QuestContext";
 import { useAuth } from "./AuthContext";
+import { supabase } from "../supabaseClient";
 
 const InventoryContext = createContext(null);
 
@@ -58,12 +59,54 @@ export function InventoryProvider({ children }) {
     }
   }, [userId, loadedUserId]);
 
-  // ─── PERSIST TO USER-SCOPED KEY ON EVERY CHANGE ───
+  // ─── PERSIST TO LOCALSTORAGE + SUPABASE ON EVERY CHANGE ───
+  const saveTimerRef = useRef(null);
   useEffect(() => {
     if (!userId || userId !== loadedUserId) return;
+    
+    // Always save locally (fast/offline)
     const key = `sq_${userId}_inventory`;
     window.localStorage.setItem(key, JSON.stringify(inventory));
+
+    // Debounce the Supabase write so we don't spam it on rapid changes
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      supabase.from("player_stats")
+        .update({ inventory: JSON.stringify(inventory) })
+        .eq("user_id", userId)
+        .then(({ error }) => {
+          if (error) console.warn("[Inventory] Supabase save failed:", error.message);
+        });
+    }, 2000); // 2s debounce
   }, [inventory, userId, loadedUserId]);
+
+  // ─── ON FIRST LOAD: RESTORE FROM SUPABASE IF LOCALSTORAGE IS EMPTY ───
+  useEffect(() => {
+    if (!userId) return;
+    const key = `sq_${userId}_inventory`;
+    const localData = window.localStorage.getItem(key);
+    
+    // Only fetch from Supabase if localStorage has nothing
+    if (!localData || localData === '[]') {
+      supabase.from("player_stats")
+        .select("inventory")
+        .eq("user_id", userId)
+        .single()
+        .then(({ data }) => {
+          if (data?.inventory) {
+            try {
+              const parsed = JSON.parse(data.inventory);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setInventory(parsed);
+                window.localStorage.setItem(key, data.inventory); // Warm the local cache
+              }
+            } catch (e) {
+              console.warn("[Inventory] Failed to restore from Supabase:", e);
+            }
+          }
+        });
+    }
+  }, [userId]);
 
   /* ADD ITEM — Handles deep copy & validation */
   const addItem = (item) => {

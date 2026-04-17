@@ -3,7 +3,7 @@ let lastStepTime = 0;
 let listenerActive = false;
 let currentOnStep = null;
 
-export function startStepTracking(onStep) {
+export function startStepTracking(onStep, onError) {
   currentOnStep = onStep;
 
   if (listenerActive) return;                 // prevent DOUBLE registration
@@ -18,10 +18,12 @@ export function startStepTracking(onStep) {
         if (res === "granted") {
           window.addEventListener("devicemotion", handler);
         } else {
-          alert("Motion permission denied.");
+          if (onError) onError("Motion permission denied. Tracking disabled.");
         }
       })
-      .catch(() => alert("Motion permission error."));
+      .catch((err) => {
+        if (onError) onError("Motion permission error. Tracking disabled.");
+      });
   } 
   else {
     // Android / desktop accelerometer

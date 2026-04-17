@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useQuest } from "../context/QuestContext";
 import { useInventory } from "../context/InventoryContext";
+import { useNotification } from "../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./Settings.css";
@@ -11,6 +12,7 @@ export default function Settings() {
   const { user, logout } = useAuth();
   const { dailyGoal, setDailyGoal } = useQuest();
   const { clearInventory } = useInventory();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
 
   const [localGoal, setLocalGoal] = useState(dailyGoal || 5000);
@@ -53,7 +55,7 @@ export default function Settings() {
   const handleGoalSave = async () => {
     const parsed = parseInt(localGoal, 10);
     if (!parsed || parsed < 100) {
-      alert("Goal must be a valid number of at least 100 steps.");
+      showToast("Goal must be a valid number of at least 100 steps.", "error");
       return;
     }
     setDailyGoal(parsed);
@@ -62,7 +64,7 @@ export default function Settings() {
       if (error) {
         console.error("Error saving new daily goal:", error);
       } else {
-        alert(`Awesome! Your daily goal is now ${parsed.toLocaleString()} steps.`);
+        showToast(`Awesome! Your daily goal is now ${parsed.toLocaleString()} steps.`, "success");
       }
     }
   };

@@ -368,7 +368,7 @@ function DashboardPage({ setPage }) {
     { icon:"✨", val:(stats?.xp||0).toLocaleString(),            lbl:"Total XP"       },
     { icon:"⚔️", val: stats?.level||1,                           lbl:"Hero Level"     },
     { icon:"🎯", val:(stats?.daily_goal||5000).toLocaleString(), lbl:"Daily Goal"     },
-    { icon:"👣", val: todaySteps != null ? todaySteps.toLocaleString() : "—", lbl:"Steps Today" },
+    { icon:"👣", val:(stats?.steps_today||0).toLocaleString(),   lbl:"Steps Today"    },
     { icon:"🗺️", val: zones,                                     lbl:"Zones Unlocked" },
   ];
 
@@ -407,7 +407,10 @@ function DashboardPage({ setPage }) {
       </div>
 
       <div className="card" style={{ padding:"1.75rem", marginBottom:"1.5rem" }}>
-        <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1rem", fontWeight:700, color:GOLD, marginBottom:"1.1rem", letterSpacing:".05em" }}>⚙️ Username</h2>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1.1rem" }}>
+          <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1rem", fontWeight:700, color:GOLD, margin:0, letterSpacing:".05em" }}>⚙️ Username</h2>
+          <button className="nav-link" style={{ fontSize:".6rem" }} onClick={() => console.log("Current Stats Object:", stats)}>Debug Stats to Console</button>
+        </div>
         <MsgBox msg={msg} />
         <div style={{ display:"flex", gap:".75rem" }}>
           <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Choose your hero name…" onKeyDown={e=>e.key==="Enter"&&saveUsername()} />

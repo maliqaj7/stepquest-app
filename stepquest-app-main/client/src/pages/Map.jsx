@@ -6,6 +6,7 @@ import { useEnvironment } from "../hooks/useEnvironment";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { useNotification } from "../context/NotificationContext";
 import { useState } from "react";
 import ZoneUnlockModal from "../components/ZoneUnlockModal";
 
@@ -30,6 +31,7 @@ const getZoneIcon = (emoji, unlocked) =>
 export default function Map() {
   const { totalSteps, setXp } = useQuest();
   const { city, lat, lon, loading } = useEnvironment();
+  const { showToast } = useNotification();
   const [selectedReplayZone, setSelectedReplayZone] = useState(null);
 
   if (loading || !lat || !lon) {
@@ -170,11 +172,11 @@ export default function Map() {
           onWin={() => {
             setSelectedReplayZone(null);
             setXp(prev => prev + 50); // Small XP reward for replay
-            alert(`Victory! You've proven your growth. (+50 XP)`);
+            showToast(`Victory! You've proven your growth. (+50 XP)`, "success");
           }}
           onLose={() => {
             setSelectedReplayZone(null);
-            alert("The boss stands firm. Train harder and return later!");
+            showToast("The boss stands firm. Train harder and return later!", "error");
           }}
         />
       )}

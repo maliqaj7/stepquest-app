@@ -1,9 +1,11 @@
 import { createContext, useContext, useState } from "react";
+import { useNotification } from "./NotificationContext";
 
 const AchievementContext = createContext();
 
 export function AchievementProvider({ children }) {
   const [achievements, setAchievements] = useState([]);
+  const { showToast } = useNotification();
 
   const unlock = (id, title, description) => {
 
@@ -12,7 +14,7 @@ export function AchievementProvider({ children }) {
     const achievement = { id, title, description };
     setAchievements(prev => [...prev, achievement]);
 
-    alert(`🏆 Achievement Unlocked!\n${title}\n${description}`);
+    showToast(`🏆 Achievement Unlocked!\n${title}\n${description}`, "achievement", 5000);
   };
 
   return (

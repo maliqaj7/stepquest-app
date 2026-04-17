@@ -83,7 +83,7 @@ export function QuestProvider({ children }) {
   const [questProgress, setQuestProgress] = useState(0);
   const [totalSteps, setTotalSteps] = useState(() => getInitialValue(userId, "total_steps", "total_steps", 0));
   const [stepsToday, setStepsToday] = useState(() => {
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split("T")[0];
     const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
     if (lastDate && lastDate !== today) {
       // New day -> reset local steps synchronously
@@ -134,7 +134,7 @@ export function QuestProvider({ children }) {
     }
 
     // Check daily reset on user change
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split("T")[0];
     const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
     let initSteps = getInitialValue(userId, "steps_today", "steps_today", 0);
     
@@ -162,7 +162,7 @@ export function QuestProvider({ children }) {
   // ─── PERSIST TO USER-SCOPED LOCALSTORAGE ON EVERY CHANGE ───
   useEffect(() => {
     if (!userId || !statsLoaded) return;
-    const today = new Date().toLocaleDateString();
+    const today = new Date().toISOString().split("T")[0];
     
     // Check if the day rolled over WHILE the user was active
     const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);

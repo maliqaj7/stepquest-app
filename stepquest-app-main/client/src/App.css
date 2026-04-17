@@ -4,7 +4,7 @@
 
 .app {
   min-height: 100vh;
-  background: var(--bg-deep);
+  background: transparent; /* Let the body nebula gradient show through */
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -37,11 +37,18 @@
   font-weight: 700;
   margin-bottom: 1.5rem;
   letter-spacing: 0.02em;
-  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #e879f9 80%, #a855f7 100%);
+  background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 8px rgba(251, 191, 36, 0.2));
+  filter: drop-shadow(0 2px 12px rgba(251, 191, 36, 0.3));
+  animation: titleShimmer 5s linear infinite;
+}
+
+@keyframes titleShimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
 }
 
 /* ========================================
@@ -49,19 +56,20 @@
    ======================================== */
 
 .card {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(14, 12, 20, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   transition: var(--transition-fast);
 }
 
 .card:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border-color: rgba(251, 191, 36, 0.18);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(251, 191, 36, 0.06);
+  transform: translateY(-1px);
 }
 
 .card-title {
@@ -126,14 +134,17 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--gold), #f59e0b);
-  color: var(--bg-deep);
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, #f59e0b, #fbbf24, #f59e0b);
+  background-size: 200% auto;
+  color: #0a0814;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+  font-weight: 800;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  background-position: right center;
 }
 
 .btn-primary:active {
@@ -141,14 +152,14 @@
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
   color: white;
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
 .btn-secondary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .btn-secondary:active {
@@ -687,18 +698,18 @@
   justify-content: center;
   align-items: center;
   padding: 1.5rem 1rem 5.5rem;
-  background: var(--bg-deep);
+  background: transparent;
 }
 
 .auth-card {
   width: 100%;
   max-width: 440px;
-  background: var(--bg-card);
-  backdrop-filter: blur(24px);
+  background: rgba(14, 12, 20, 0.78);
+  backdrop-filter: blur(32px);
   border-radius: var(--radius-lg);
   padding: 2.5rem 2.25rem;
-  box-shadow: var(--shadow-elevated);
-  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-elevated), 0 0 60px rgba(245, 140, 20, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.12);
 }
 
 .auth-switch {

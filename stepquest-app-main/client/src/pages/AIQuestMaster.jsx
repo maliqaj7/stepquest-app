@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuest } from "../context/QuestContext";
+import { useNotification } from "../context/NotificationContext";
 
 export default function AIQuestMaster() {
   const [input, setInput] = useState("");
   const [quest, setQuest] = useState(null);
 
   const { setActiveQuest } = useQuest();
+  const { showToast } = useNotification();
 
   // Difficulty tiers
   const difficultyLevels = [
@@ -41,7 +43,7 @@ export default function AIQuestMaster() {
   const acceptQuest = () => {
     if (!quest) return;
     setActiveQuest(quest);
-    alert(`Quest Accepted: ${quest.title}`);
+    showToast(`Quest Accepted: ${quest.title}`, "success");
   };
 
   return (

@@ -14,12 +14,12 @@
   align-items: center;
   gap: 2px;
 
-  background: rgba(5, 5, 7, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.7);
-  z-index: 9999; /* Boost to stay above Map and Modals */
+  background: rgba(8, 7, 14, 0.97);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border-top: 1px solid rgba(251, 191, 36, 0.15);
+  box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.8), 0 -1px 0 rgba(245, 140, 20, 0.06);
+  z-index: 9999;
   pointer-events: auto !important;
 
   font-family: var(--font-body);

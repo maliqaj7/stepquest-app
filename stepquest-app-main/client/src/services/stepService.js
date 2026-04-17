@@ -1,7 +1,7 @@
 let lastAccel = { x: 0, y: 0, z: 0 };
 let lastStepTime = 0;
 
-export function startStepTracking(onStep) {
+export function startStepTracking(onStep, onError) {
   // iOS permission check
   if (typeof DeviceMotionEvent.requestPermission === "function") {
     DeviceMotionEvent.requestPermission()
@@ -9,10 +9,12 @@ export function startStepTracking(onStep) {
         if (response === "granted") {
           window.addEventListener("devicemotion", handleMotion(onStep));
         } else {
-          alert("Motion tracking permission denied.");
+          if (onError) onError("Motion tracking permission denied.");
         }
       })
-      .catch(() => alert("Motion tracking failed."));
+      .catch(() => {
+        if (onError) onError("Motion tracking failed.");
+      });
   } else {
     // Android or desktop fallback
     window.addEventListener("devicemotion", handleMotion(onStep));

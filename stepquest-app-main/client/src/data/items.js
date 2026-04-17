@@ -33,6 +33,11 @@ export const LOOT_TABLE = [
   { id: "oracle_eye", name: "Oracle's Eye", rarity: "Legendary", icon: "👁️", stats: { luck: 15, atk: 5, def: 5, spd: 5, end: 5, mag: 5 }, description: "Sees all possibilities at once." },
   { id: "tempest_core", name: "Tempest Core", rarity: "Mythic", icon: "🌀", stats: { atk: 25, spd: 10 }, description: "The heart of a raging hurricane.", minLevel: 50 },
   { id: "celestial_sigil", name: "Celestial Sigil", rarity: "Mythic", icon: "✨", stats: { atk: 10, def: 10, spd: 10, luck: 10, end: 10, mag: 10 }, description: "The ultimate mark of a Hero.", minLevel: 50 },
+
+  // Social Only Loot (Exclusive to Party Raids)
+  { id: "unity_ribbon", name: "Unity Ribbon", rarity: "Rare", icon: "🎗️", stats: { spd: 8, luck: 5 }, description: "A symbol of shared steps. Increases XP gains.", isSocialOnly: true },
+  { id: "party_banner", name: "Heroic Banner", rarity: "Epic", icon: "🚩", stats: { def: 12, end: 10 }, description: "Carried by those who walk together.", isSocialOnly: true },
+  { id: "fellowship_blade", name: "Blade of Fellowship", rarity: "Legendary", icon: "⚔️", stats: { atk: 22, luck: 10 }, description: "Its edge sharpens with every friend by your side.", isSocialOnly: true },
 ];
 
 /**
@@ -72,9 +77,11 @@ export const rollLoot = (level = 1) => {
   }
 
   // Filter pool by rarity AND minLevel requirement
+  // Exclude social-only items from general rolls
   let pool = LOOT_TABLE.filter(item => 
     item.rarity === targetRarity && 
-    (item.minLevel ? level >= item.minLevel : true)
+    (item.minLevel ? level >= item.minLevel : true) &&
+    !item.isSocialOnly
   );
 
   // If pool is empty (e.g., asked for Rare but level is too low for all Rares), 

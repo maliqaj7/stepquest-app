@@ -12,7 +12,9 @@ import ZoneUnlockModal from "../components/ZoneUnlockModal";
 import { ZONES } from "../data/zones";
 import { useEnvironment } from "../hooks/useEnvironment";
 import { getHeroProgression } from "../data/progression";
+import { useNotification } from "../context/NotificationContext";
 import { rollLoot } from "../data/items";
+import { logSocialActivity } from "../services/socialService";
 import "../components/Modals.css";
 
 // Logic for dynamic XP scaling
@@ -42,6 +44,7 @@ export default function Home() {
   const { addItem } = useInventory();
   const { unlock } = useAchievements();
   const { user } = useAuth(); // current logged‑in Supabase user
+  const { showToast } = useNotification();
 
   // Local UI state
   const [streak, setStreak] = useState(0);
@@ -130,6 +133,7 @@ export default function Home() {
       await supabase.from("player_stats").insert({
         user_id: user.id,
         username: newUsername,
+        email: user.email,
         steps_today: 0,
         total_steps: 0,
         xp: 0,
@@ -233,20 +237,29 @@ export default function Home() {
     const username = user.email ? user.email.split("@")[0] : `Hero_${user.id.substring(0,4)}`;
     const today = new Date().toISOString().split("T")[0];
 
+    console.log("⚔️ Syncing stats to server...", stats);
+
     const { error } = await supabase.from("player_stats").update({
       username,
+      email: user.email,
       last_updated: today,
-      ...stats,
+      steps_today: stats.steps_today,
+      total_steps: stats.total_steps,
+      xp: stats.xp,
+      level: stats.level
     }).eq("user_id", user.id);
 
+    // Upsert into history table
     await supabase.from("daily_steps").upsert({
       user_id: user.id,
       date: today,
       steps: stats.steps_today
-    });
+    }, { onConflict: 'user_id,date' });
 
     if (error) {
-      console.error("Error saving stats:", error);
+      console.error("❌ Error saving stats:", error);
+    } else {
+      console.log("✅ Stats synced successfully.");
     }
   };
 
@@ -351,6 +364,7 @@ export default function Home() {
         newTitle: getHeroProgression(newLevel).title
       });
       setShowLevelModal(true);
+      logSocialActivity(user.id, 'level_up', `reached Level ${newLevel}!`);
     }
   }, [xp, level, totalSteps]);
 
@@ -370,7 +384,7 @@ export default function Home() {
       setStepsToday((prev) => prev + steps);
       setTotalSteps((prev) => prev + steps);
       if (handleStepGainRef.current) handleStepGainRef.current(steps);
-    });
+    }, (err) => showToast(err, "error"));
   }, []);
 
   /* -----------------------------
@@ -451,6 +465,9 @@ export default function Home() {
       const item = rollLoot(level);
       addItem(item);
       // Removed alert as it can cause navigation/scroll glitches; use a toast if available
+      if (item.rarity !== 'Common') {
+        logSocialActivity(user.id, 'rare_loot', `found a ${item.rarity} ${item.name}!`);
+      }
       console.log(`🎒 Loot Found: ${item.name}`);
     }
   };
@@ -723,6 +740,7 @@ export default function Home() {
             setShowQuestModal(true); // Reuse modal to show loot
             
             console.log(`🏆 Boss Defeated! Gained ${bossXp} XP and ${bossLoot.name}`);
+            logSocialActivity(user.id, 'boss_defeat', `defeated the boss of ${unlockedZoneData.name}!`);
           }}
           onLose={() => {
             setShowZoneModal(false);
