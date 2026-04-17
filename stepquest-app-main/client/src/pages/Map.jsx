@@ -10,22 +10,47 @@ import { useNotification } from "../context/NotificationContext";
 import { useState } from "react";
 import ZoneUnlockModal from "../components/ZoneUnlockModal";
 
+// Player marker: glowing knight icon
 const getKnightIcon = () =>
-  new L.Icon({
-    iconUrl: knightImg,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+  new L.DivIcon({
+    html: `
+      <div style="
+        width:44px; height:44px; border-radius:50%;
+        background: radial-gradient(circle, rgba(251,191,36,0.3) 0%, transparent 70%);
+        border: 2px solid rgba(251,191,36,0.8);
+        box-shadow: 0 0 20px rgba(251,191,36,0.7);
+        display:flex; align-items:center; justify-content:center;
+        animation: playerGlow 2s ease-in-out infinite;
+        overflow:hidden;
+      ">
+        <img src="${knightImg}" style="width:28px;height:28px;image-rendering:pixelated;" />
+      </div>`,
+    className: "custom-zone-icon",
+    iconSize: [44, 44],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -26],
   });
 
+// Zone marker: pulsing for unlocked, dimmed for locked
 const getZoneIcon = (emoji, unlocked) =>
   new L.DivIcon({
-    html: `<div style="font-size: 28px; filter: ${
-      unlocked ? "drop-shadow(0 0 8px rgba(34,197,94,0.8))" : "grayscale(100%) opacity(50%)"
-    };">${emoji}</div>`,
+    html: `
+      <div style="
+        width:40px; height:40px; border-radius:50%;
+        background: ${unlocked
+          ? "radial-gradient(circle, rgba(34,197,94,0.25) 0%, rgba(16,185,129,0.08) 60%)"
+          : "rgba(24,24,36,0.7)"
+        };
+        border: 2px solid ${unlocked ? "rgba(34,197,94,0.7)" : "rgba(100,116,139,0.3)"};
+        box-shadow: ${unlocked ? "0 0 18px rgba(34,197,94,0.55)" : "none"};
+        display:flex; align-items:center; justify-content:center;
+        font-size: 1.2rem;
+        ${unlocked ? "animation: zonePulse 2.5s ease-in-out infinite;" : "filter: grayscale(70%) brightness(0.6);"}
+      ">${emoji}</div>`,
     className: "custom-zone-icon",
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -24],
   });
 
 export default function Map() {
@@ -36,15 +61,16 @@ export default function Map() {
 
   if (loading || !lat || !lon) {
     return (
-      <div className="page" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-        <p className="stat muted" style={{ fontSize: "1.2rem", textAlign: "center" }}>
+      <div className="page map-loading">
+        <div className="map-loading-pulse" />
+        <p className="stat muted" style={{ fontSize: "1rem", textAlign: "center" }}>
           📡 Calibrating GPS...
         </p>
       </div>
     );
   }
 
-  // Rewrite zones to include the user's city
+  // Localize first two zone names to the user's city
   const localizedZones = zones.map((z, idx) => {
     if (!city || city === "Unknown") return z;
     if (idx === 0) return { ...z, name: `${city} Edge` };
@@ -52,32 +78,19 @@ export default function Map() {
     return z;
   });
 
-  // Calculate coordinates radiating outward from the user
   const userPos = [lat, lon];
-  
-  // Golden Angle Spiral distribution for 10km radius
   const MAX_RADIUS_KM = 10;
-  const DEG_PER_KM = 1 / 111.32; // Approx degrees per km for latitude
+  const DEG_PER_KM = 1 / 111.32;
   const MAX_RADIUS_DEG = MAX_RADIUS_KM * DEG_PER_KM;
 
   const mappedZones = localizedZones.map((z, i) => {
     if (i === 0) return { ...z, coords: [lat, lon] };
-    
-    // Golden angle in radians: (3 - sqrt(5)) * PI ≈ 137.5 degrees
     const goldenAngle = Math.PI * (3 - Math.sqrt(5));
     const angle = i * goldenAngle;
-    
-    // Uniform area distribution: r = sqrt(i / total) * MaxR
     const r = Math.sqrt(i / (localizedZones.length - 1)) * MAX_RADIUS_DEG;
-    
     const latOffset = r * Math.cos(angle);
-    // Compensate longitude for latitude narrowing towards poles
     const lonOffset = (r * Math.sin(angle)) / Math.cos((lat * Math.PI) / 180);
-    
-    return {
-      ...z,
-      coords: [lat + latOffset, lon + lonOffset],
-    };
+    return { ...z, coords: [lat + latOffset, lon + lonOffset] };
   });
 
   const unlockedCount = mappedZones.filter((z) => totalSteps >= z.requiredSteps).length;
@@ -85,27 +98,20 @@ export default function Map() {
 
   return (
     <div className="page map-page" style={{ padding: 0, height: "100%", display: "flex", flexDirection: "column" }}>
-      <div
-        className="card"
-        style={{
-          margin: "1rem",
-          zIndex: 1000, // Stay above Leaflet map
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          background: "rgba(9, 9, 11, 0.85)",
-          backdropFilter: "blur(12px)",
-        }}
-      >
-        <p className="stat" style={{ margin: 0 }}>
-          GPS Locked: <span className="stat-highlight">{city}</span>
-        </p>
-        <p className="stat" style={{ margin: 0 }}>
-          Zones Unlocked: <span className="stat-highlight">{unlockedCount} / {mappedZones.length}</span>
-        </p>
+
+      {/* ── PREMIUM HUD OVERLAY ── */}
+      <div className="map-hud">
+        <div className="map-hud-left">
+          <div className="map-hud-gps">GPS Locked</div>
+          <div className="map-hud-city">{city || "Unknown Location"}</div>
+        </div>
+        <div className="map-hud-right">
+          <div className="map-hud-zones-label">Zones Unlocked</div>
+          <div className="map-hud-zones-count">{unlockedCount} <span style={{ color: '#475569', fontWeight: 400 }}>/ {mappedZones.length}</span></div>
+        </div>
       </div>
 
+      {/* ── MAP ── */}
       <div style={{ flex: 1, position: "relative" }}>
         <MapContainer
           center={userPos}
@@ -113,51 +119,51 @@ export default function Map() {
           style={{ width: "100%", height: "100vh" }}
           zoomControl={false}
         >
-          {/* Dark themed map tiles */}
+          {/* Dark Carto tile */}
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
 
-          {/* Connect the zones with a dashed line */}
+          {/* Quest path line */}
           <Polyline
             positions={pathPositions}
-            pathOptions={{ color: "#22c55e", dashArray: "10, 10", weight: 3, opacity: 0.6 }}
+            pathOptions={{ color: "#fbbf24", dashArray: "8, 12", weight: 2, opacity: 0.4 }}
           />
 
-          {/* User Marker */}
+          {/* Player Marker */}
           <Marker position={userPos} icon={getKnightIcon()}>
-            <Popup zIndexOffset={1000}>
-              <div style={{ color: "#000", fontWeight: "bold" }}>You are here!</div>
+            <Popup>
+              <p className="zone-popup-name" style={{ color: '#fbbf24' }}>⚔️ You Are Here</p>
+              <p className="zone-popup-desc">Your current position.</p>
             </Popup>
           </Marker>
 
-          {/* Zone Boss Markers */}
+          {/* Zone Markers */}
           {mappedZones.map((zone) => {
             const unlocked = totalSteps >= zone.requiredSteps;
             return (
               <Marker key={zone.id} position={zone.coords} icon={getZoneIcon("🦹‍♂️", unlocked)}>
                 <Popup>
-                  <div style={{ color: "#000", minWidth: "150px" }}>
-                    <h3 style={{ margin: "0 0 5px 0", fontSize: "1rem" }}>{zone.name}</h3>
-                    <p style={{ margin: "0 0 5px 0", fontSize: "0.8rem" }}>{zone.description}</p>
-                    {unlocked ? (
-                      <div style={{ marginTop: "8px" }}>
-                        <strong style={{ color: "green", display: "block", marginBottom: "4px" }}>✅ Unlocked!</strong>
-                        {zone.bossName && (
-                          <button 
-                            className="btn-primary" 
-                            style={{ fontSize: "0.7rem", padding: "4px 8px", width: "100%" }}
-                            onClick={() => setSelectedReplayZone(zone)}
-                          >
-                            ⚔️ Rebattle Boss
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <em style={{ color: "red" }}>Requires {zone.requiredSteps} steps</em>
-                    )}
-                  </div>
+                  <p className="zone-popup-name">{zone.name}</p>
+                  <p className="zone-popup-desc">{zone.description}</p>
+                  {unlocked ? (
+                    <>
+                      <div className="zone-popup-unlocked">✅ Zone Unlocked</div>
+                      {zone.bossName && (
+                        <button
+                          className="zone-popup-btn"
+                          onClick={() => setSelectedReplayZone(zone)}
+                        >
+                          ⚔️ Rebattle Boss
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="zone-popup-locked">
+                      🔒 Requires {zone.requiredSteps.toLocaleString()} steps
+                    </div>
+                  )}
                 </Popup>
               </Marker>
             );
@@ -171,8 +177,8 @@ export default function Map() {
           isReplay={true}
           onWin={() => {
             setSelectedReplayZone(null);
-            setXp(prev => prev + 50); // Small XP reward for replay
-            showToast(`Victory! You've proven your growth. (+50 XP)`, "success");
+            setXp(prev => prev + 50);
+            showToast("Victory! You've proven your growth. (+50 XP)", "success");
           }}
           onLose={() => {
             setSelectedReplayZone(null);

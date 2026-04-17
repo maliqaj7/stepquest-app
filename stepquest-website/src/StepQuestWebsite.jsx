@@ -55,6 +55,12 @@ const STARS = Array.from({ length: 90 }, (_, i) => ({
   size: 1 + (i % 3) * 0.6, delay: ((i * 0.17) % 5).toFixed(2), dur: (2.2 + (i % 4) * 0.6).toFixed(1),
 }));
 
+const ZONE_REQUIREMENTS = [
+  0, 2000, 10000, 20000, 32000, 45000, 65000, 85000, 105000, 125000, 
+  150000, 180000, 210000, 240000, 270000, 300000, 340000, 380000, 
+  420000, 460000, 500000, 550000, 600000, 650000, 700000, 750000
+];
+
 // ─── Global CSS ───────────────────────────────────────────────────────────────
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
@@ -339,11 +345,16 @@ function DashboardPage({ setPage }) {
     Promise.all([
       supabase.from("player_stats").select("*").eq("user_id", uid).single(),
       supabase.from("daily_steps").select("steps").eq("user_id", uid).eq("date", today).single(),
-      supabase.from("zone_unlocks").select("id", { count:"exact" }).eq("user_id", uid),
-    ]).then(([{ data:s }, { data:d }, { count:z }]) => {
-      if (s) { setStats(s); setUsername(s.username || ""); }
+    ]).then(([{ data:s }, { data:d }]) => {
+      if (s) { 
+        setStats(s); 
+        setUsername(s.username || "");
+        // Calculate zones unlocked based on total_steps (authority source)
+        const totalSteps = Number(s.total_steps || 0);
+        const unlockedCount = ZONE_REQUIREMENTS.filter(req => totalSteps >= req).length;
+        setZones(unlockedCount);
+      }
       if (d) setTodaySteps(d.steps);
-      setZones(z || 0);
       setLoading(false);
     });
   }, [session]);
