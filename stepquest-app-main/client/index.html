@@ -9,10 +9,8 @@
     <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-
     <!-- Theme Color -->
+
     <meta name="theme-color" content="#050507" />
 
     <!-- Google Fonts -->
@@ -23,9 +21,9 @@
     <!-- iOS PWA Requirements -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" href="/vite.svg" />
 
     <!-- Allow Motion & Orientation on iOS -->
+
     <meta name="apple-mobile-web-app-orientation" content="portrait" />
 
     <title>StepQuest</title>
@@ -37,15 +35,6 @@
     <!-- React Entry -->
     <script type="module" src="/src/main.jsx"></script>
 
-    <!-- Register Service Worker -->
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("/service-worker.js")
-          .then(() => console.log("Service Worker Registered"))
-          .catch((err) => console.error("SW registration failed:", err));
-      }
-    </script>
 
     <!-- iOS 13–17 Motion Permission Trigger -->
     <script>
