@@ -46,7 +46,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
 
   text-decoration: none;
   background: transparent;
@@ -56,35 +56,50 @@
   cursor: pointer;
   letter-spacing: 0.02em;
 
-  transition: color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  transition: all 0.3s var(--ease-out);
 }
 
-/* Icon + label */
+/* Icon + label (Mobile - Dynamic Label Pattern) */
 .pixel-tab-icon {
-  font-size: 1.2rem;
+  font-size: 1.35rem; /* Larger icon so it stands alone nicely */
   line-height: 1;
-  transition: transform 0.2s var(--ease-out), filter 0.2s ease;
+  transform: translateY(4px); /* Center visually without label */
+  transition: all 0.3s var(--ease-out);
 }
 
 .pixel-tab-label {
   white-space: nowrap;
+  opacity: 0;
+  max-width: 0;
+  max-height: 0;
+  transform: scale(0.5) translateY(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
 }
 
 /* Active route highlight */
 .pixel-tab.active {
+  flex: 1.4; /* Active tab slightly widens */
   color: var(--gold);
 }
 
 .pixel-tab.active .pixel-tab-icon {
-  transform: translateY(-2px) scale(1.1);
+  transform: translateY(-4px) scale(1.1); /* Move up to make space for label */
   filter: drop-shadow(0 2px 6px rgba(251, 191, 36, 0.4));
+}
+
+.pixel-tab.active .pixel-tab-label {
+  opacity: 1;
+  max-width: 80px;
+  max-height: 20px;
+  transform: scale(1) translateY(0);
 }
 
 /* Animated gold underline for active tab */
 .pixel-tab.active::after {
   content: "";
   position: absolute;
-  bottom: 4px;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
   width: 20px;
@@ -105,8 +120,22 @@
   color: var(--text-secondary);
 }
 
-.pixel-tab:hover .pixel-tab-icon {
-  transform: translateY(-1px);
+.pixel-tab:not(.active):hover .pixel-tab-icon {
+  transform: translateY(2px) scale(1.05);
+}
+
+/* Desktop: Restore full labels since there is enough horizontal space */
+@media (min-width: 768px) {
+  .pixel-tab-icon {
+    font-size: 1.2rem;
+    transform: translateY(-2px);
+  }
+  .pixel-tab-label {
+    opacity: 1;
+    max-width: 80px;
+    max-height: 20px;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Logout tab */
