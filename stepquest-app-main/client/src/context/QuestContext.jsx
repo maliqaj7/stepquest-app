@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "./AuthContext";
 import { ZONES } from "../data/zones";
+import { supabase } from "../supabaseClient";
 
 import knight1 from "../assets/Knight.png";
 import knight2 from "../assets/Evil Knight.png";
@@ -24,6 +25,15 @@ const readJSON = (key, fallback) => {
   try {
     const v = window.localStorage.getItem(key);
     return v ? JSON.parse(v) : fallback;
+  } catch { return fallback; }
+};
+
+// Helper: read a plain string from localStorage (avoids Number() coercion)
+const readStr = (key, fallback) => {
+  try {
+    const v = window.localStorage.getItem(key);
+    if (v === null || v === "undefined" || v === "null" || v === "") return fallback;
+    return v;
   } catch { return fallback; }
 };
 
@@ -95,6 +105,20 @@ export function QuestProvider({ children }) {
     return getInitialValue(userId, "steps_today", "steps_today", 0);
   });
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(() => getInitialValue(userId, "onboarding_completed", "onboarding_completed", false));
+  const [weight, setWeight] = useState(() => getInitialValue(userId, "weight_kg", "weight_kg", 0));
+  const [height, setHeight] = useState(() => getInitialValue(userId, "height_cm", "height_cm", 0));
+  const [age, setAge] = useState(() => getInitialValue(userId, "age", "age", 0));
+  // String fields — must NOT go through Number() coercion, use readStr directly
+  const [heroClass, setHeroClass] = useState(() => {
+    if (!userId) return null;
+    return readStr(`sq_${userId}_hero_class`, null);
+  });
+  const [motivation, setMotivation] = useState(() => {
+    if (!userId) return null;
+    return readStr(`sq_${userId}_motivation`, null);
+  });
+  
   const [level, setLevel] = useState(() => getInitialValue(userId, "level", "level", 1));
   const [xp, setXp] = useState(() => getInitialValue(userId, "xp", "xp", 0));
   const [dailyGoal, setDailyGoal] = useState(() => getInitialValue(userId, "daily_goal", "daily_goal", 5000));
@@ -158,6 +182,13 @@ export function QuestProvider({ children }) {
 
     setTotalSteps(getInitialValue(userId, "total_steps", "total_steps", 0));
     setStepsToday(initSteps);
+    setOnboardingCompleted(getInitialValue(userId, "onboarding_completed", "onboarding_completed", false));
+    setWeight(getInitialValue(userId, "weight_kg", "weight_kg", 0));
+    setHeight(getInitialValue(userId, "height_cm", "height_cm", 0));
+    setAge(getInitialValue(userId, "age", "age", 0));
+    setHeroClass(readStr(`sq_${userId}_hero_class`, null));
+    setMotivation(readStr(`sq_${userId}_motivation`, null));
+    
     setLevel(getInitialValue(userId, "level", "level", 1));
     setXp(getInitialValue(userId, "xp", "xp", 0));
     setDailyGoal(getInitialValue(userId, "daily_goal", "daily_goal", 5000));
@@ -184,25 +215,38 @@ export function QuestProvider({ children }) {
   // ─── PERSIST TO USER-SCOPED LOCALSTORAGE ON EVERY CHANGE ───
   useEffect(() => {
     if (!userId) return;
-    
+
     if (statsLoaded) {
       const today = new Date().toISOString().split("T")[0];
-      
+
       // Check if the day rolled over WHILE the user was active
       const lastDate = window.localStorage.getItem(`sq_${userId}_last_date`);
       if (lastDate && lastDate !== today) {
         setStepsToday(0); // dynamically reset if midnight strikes
       }
 
-      write(userKey(userId, "last_date"), today);
-      write(userKey(userId, "total_steps"), totalSteps);
-      write(userKey(userId, "steps_today"), stepsToday);
-      write(userKey(userId, "level"), level);
-      write(userKey(userId, "xp"), xp);
+      write(userKey(userId, "onboarding_completed"), onboardingCompleted);
       write(userKey(userId, "daily_goal"), dailyGoal);
     }
-    
-    // Always persist announced_zones independently of statsLoaded to ensure discovery is never lost
+
+    // ── ALWAYS persist these immediately — never gate on statsLoaded ─────────
+    // Steps, level, XP and last_date must survive a page reload even if the
+    // 3-second Supabase debounce hasn't fired yet.
+    const today = new Date().toISOString().split("T")[0];
+    write(userKey(userId, "last_date"), today);
+    write(userKey(userId, "total_steps"), totalSteps);
+    write(userKey(userId, "steps_today"), stepsToday);
+    write(userKey(userId, "level"), level);
+    write(userKey(userId, "xp"), xp);
+
+    // Persist physical stats independently
+    write(userKey(userId, "weight_kg"), weight);
+    write(userKey(userId, "height_cm"), height);
+    write(userKey(userId, "age"), age);
+    write(userKey(userId, "hero_class"), heroClass);
+    write(userKey(userId, "motivation"), motivation);
+
+    // Always persist announced_zones to ensure zone discovery is never lost
     write(userKey(userId, "announced_zones"), announcedZones);
   }, [userId, statsLoaded, totalSteps, stepsToday, level, xp, dailyGoal, announcedZones]);
 
@@ -259,12 +303,117 @@ export function QuestProvider({ children }) {
     setActiveQuest(null);
   }, []);
 
+  // Stat bonus map for classes
+  const CLASS_BONUS_STAT = { Warrior: "atk", Ranger: "spd", Mage: "mag" };
+
+  const completeOnboarding = useCallback(async (data) => {
+    if (!userId) return;
+    
+    // 1. Calculate base stats with class bonus (all start at 5)
+    const initialStats = { ...DEFAULT_STATS };
+    if (data.heroClass === "Warrior") initialStats.atk += 2;
+    if (data.heroClass === "Ranger") initialStats.spd += 2;
+    if (data.heroClass === "Mage") initialStats.mag += 2;
+
+    // 2. Update local state immediately so UI reflects change
+    setWeight(data.weight);
+    setHeight(data.height);
+    setAge(data.age);
+    setHeroClass(data.heroClass);
+    setMotivation(data.motivation);
+    setBaseStats(initialStats);
+    setOnboardingCompleted(true);
+    // Persist onboarding flag to localStorage immediately so ProtectedRoute sees it
+    window.localStorage.setItem(`sq_${userId}_onboarding_completed`, "true");
+
+    // 3. Read any existing row to avoid overwriting gameplay progress
+    const today = new Date().toISOString().split("T")[0];
+    const { data: existing } = await supabase
+      .from("player_stats")
+      .select("steps_today, total_steps, xp, level, daily_goal, username")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    // 4. Upsert — inserts if row absent, updates if present.
+    // Use Math.max so onboarding can NEVER lower an existing player's level/progress.
+    const { error } = await supabase.from("player_stats").upsert({
+      user_id: userId,
+      username: existing?.username || `Hero_${userId.substring(0, 4)}`,
+      steps_today: Math.max(existing?.steps_today ?? 0, stepsToday),
+      total_steps: Math.max(existing?.total_steps ?? 0, totalSteps),
+      xp: Math.max(existing?.xp ?? 0, xp),
+      level: Math.max(existing?.level ?? 1, level),
+      daily_goal: existing?.daily_goal ?? dailyGoal,
+      last_updated: today,
+      weight_kg: data.weight,
+      height_cm: data.height,
+      age: data.age,
+      hero_class: data.heroClass,
+      motivation: data.motivation,
+      onboarding_completed: true,
+      base_stats: initialStats,
+    }, { onConflict: "user_id" });
+
+    if (error) {
+      console.error("Error saving onboarding data:", error);
+      throw error;
+    }
+  }, [userId]);
+
+  /**
+   * changeHeroClass — respec with a stat transfer penalty.
+   * Old class bonus (-2) is removed. New class gets +1 (50% transfer).
+   * The lost point is a respec cost — encourages thoughtful class choice.
+   */
+  const changeHeroClass = useCallback(async (newClass) => {
+    if (!userId || !newClass) return;
+    if (heroClass === newClass) return; // already this class, nothing to do
+
+    const newStat = CLASS_BONUS_STAT[newClass];
+    const newStats = { ...baseStats };
+
+    if (heroClass) {
+      // RESPEC — penalty applies: remove old +2, give new +1
+      const oldStat = CLASS_BONUS_STAT[heroClass];
+      newStats[oldStat] = Math.max(1, (newStats[oldStat] || 5) - 2);
+      newStats[newStat] = (newStats[newStat] || 5) + 1;
+    } else {
+      // FIRST-TIME selection — no penalty, full +2
+      newStats[newStat] = (newStats[newStat] || 5) + 2;
+    }
+
+    setBaseStats(newStats);
+    setHeroClass(newClass);
+    write(userKey(userId, "base_stats"), newStats);
+    write(userKey(userId, "hero_class"), newClass);
+    // Also mark onboarding as done in localStorage in case they skipped
+    window.localStorage.setItem(`sq_${userId}_onboarding_completed`, "true");
+
+    const { error } = await supabase.from("player_stats").update({
+      hero_class: newClass,
+      base_stats: newStats,
+      onboarding_completed: true,
+    }).eq("user_id", userId);
+
+    // Don't throw — local state + localStorage are already updated.
+    if (error) {
+      console.error("changeHeroClass: Supabase sync failed:", error.message);
+    }
+    return { newStat, isFirstTime: !heroClass };
+  }, [userId, heroClass, baseStats]);
+
   const value = useMemo(() => ({
     activeQuest, setActiveQuest,
     questProgress, setQuestProgress,
     totalSteps, setTotalSteps,
     stepsToday, setStepsToday,
     statsLoaded, setStatsLoaded,
+    onboardingCompleted, setOnboardingCompleted,
+    weight, setWeight,
+    height, setHeight,
+    age, setAge,
+    heroClass, setHeroClass,
+    motivation, setMotivation,
     level, setLevel,
     xp, setXp,
     dailyGoal, setDailyGoal,
@@ -272,10 +421,15 @@ export function QuestProvider({ children }) {
     selectedAvatar, setSelectedAvatar,
     completedQuests, completeQuest,
     announcedZones, setAnnouncedZones,
+    completeOnboarding,
+    changeHeroClass,
+    userId,
   }), [
     activeQuest, questProgress, totalSteps, stepsToday, statsLoaded,
+    onboardingCompleted, weight, height, age, heroClass, motivation,
     level, xp, dailyGoal, baseStats, availablePoints,
-    upgradeStat, completedQuests, completeQuest, announcedZones
+    upgradeStat, completedQuests, completeQuest, announcedZones,
+    completeOnboarding, changeHeroClass, userId
   ]);
 
   return (

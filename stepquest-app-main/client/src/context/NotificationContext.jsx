@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 const NotificationContext = createContext();
 
@@ -55,7 +55,7 @@ function Toast({ message, type, duration, onRemove }) {
   return (
     <div className={`toast-item toast-${type} ${isVisible ? 'visible' : 'hidden'}`} onClick={handleClose}>
       <span className="toast-icon">{typeIcons[type] || "📜"}</span>
-      <div className="toast-content">{message}</div>
+      <div className="toast-content">{String(message)}</div>
     </div>
   );
 }

@@ -137,6 +137,7 @@ export default function ProfilePage() {
                     {key === "spd" && "⚡"}
                     {key === "luck" && "🍀"}
                     {key === "end" && "🫀"}
+                    {key === "mag" && "🔮"}
                   </span>
                   <div className="stat-text">
                     <p className="stat-name">{key.toUpperCase()}</p>
@@ -146,6 +147,7 @@ export default function ProfilePage() {
                       {key === "spd" && "Higher chance to dodge & strike first"}
                       {key === "luck" && "Better loot rarity from quests"}
                       {key === "end" && "Max HP and recovery speed"}
+                      {key === "mag" && "Increases magic damage and skill potency"}
                     </p>
                   </div>
                 </div>

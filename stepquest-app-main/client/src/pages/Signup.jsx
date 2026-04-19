@@ -1,29 +1,35 @@
 // src/pages/Signup.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
-  const { signup } = useAuth(); 
+  const { signup, user } = useAuth();
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
+
+  // If Supabase auto-logs in the user after signup (no email confirmation),
+  // redirect them to onboarding immediately.
+  useEffect(() => {
+    if (user) {
+      navigate("/onboarding", { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    setInfo("");
     setLoading(true);
 
     try {
       await signup(email.trim(), password);
-      // Supabase usually sends a confirmation email
-      setInfo("Account created please Log in");
-      // Optionally send them to login:
-      // navigate("/login");
+      // If email confirmation is required, user won't be set yet.
+      // Show a friendly redirect-to-login message instead.
+      // If auto-confirmed, the useEffect above handles the redirect.
     } catch (err) {
       console.error(err);
       setError(err.message || "Could not sign up. Please try again.");
@@ -50,7 +56,6 @@ export default function Signup() {
         </p>
 
         {error && <div className="auth-error">{error}</div>}
-        {info && <div className="auth-info">{info}</div>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="auth-label">

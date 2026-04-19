@@ -8,11 +8,11 @@
   left: 0;
   right: 0;
   height: 70px;
-  padding: 6px 4px;
+  padding: 6px 2px;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  gap: 2px;
+  gap: 0px;
 
   background: rgba(8, 7, 14, 0.97);
   backdrop-filter: blur(32px);
@@ -51,7 +51,7 @@
   text-decoration: none;
   background: transparent;
   color: var(--text-dim);
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.02em;
@@ -61,7 +61,7 @@
 
 /* Icon + label (Mobile - Dynamic Label Pattern) */
 .pixel-tab-icon {
-  font-size: 1.35rem; /* Larger icon so it stands alone nicely */
+  font-size: 1.15rem; /* Scaled down for mobile */
   line-height: 1;
   transform: translateY(4px); /* Center visually without label */
   transition: all 0.3s var(--ease-out);
@@ -79,7 +79,7 @@
 
 /* Active route highlight */
 .pixel-tab.active {
-  flex: 1.4; /* Active tab slightly widens */
+  flex: 1.2; /* Slightly widens */
   color: var(--gold);
 }
 
@@ -90,7 +90,7 @@
 
 .pixel-tab.active .pixel-tab-label {
   opacity: 1;
-  max-width: 80px;
+  max-width: 60px;
   max-height: 20px;
   transform: scale(1) translateY(0);
 }
@@ -127,7 +127,7 @@
 /* Desktop: Restore full labels since there is enough horizontal space */
 @media (min-width: 768px) {
   .pixel-tab-icon {
-    font-size: 1.2rem;
+    font-size: 1.35rem;
     transform: translateY(-2px);
   }
   .pixel-tab-label {

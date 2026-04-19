@@ -3,7 +3,7 @@
    ======================================== */
 
 .settings-page {
-  padding: 1.5rem 1.25rem 5rem;
+  padding: 1.5rem 1.25rem 6rem;
   max-width: 720px;
   margin: 0 auto;
   color: var(--text-primary);
@@ -35,12 +35,19 @@
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   color: var(--gold);
   letter-spacing: 0.03em;
 }
 
-/* --- Profile row inside Settings --- */
+.settings-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+/* ── Profile row ───────────────────────────────────────────── */
 
 .settings-row-button {
   width: 100%;
@@ -69,15 +76,16 @@
 }
 
 .settings-avatar-wrapper {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-full);
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--border-subtle);
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
 }
 
 .settings-avatar-img {
@@ -86,9 +94,7 @@
   object-fit: cover;
 }
 
-.settings-avatar-fallback {
-  font-size: 1.4rem;
-}
+.settings-avatar-fallback { font-size: 1.4rem; }
 
 .settings-profile-name {
   font-size: 0.95rem;
@@ -98,7 +104,8 @@
 
 .settings-profile-sub {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--gold);
+  margin-top: 2px;
 }
 
 .settings-chevron {
@@ -106,38 +113,205 @@
   color: var(--text-dim);
 }
 
-/* Account */
+/* ── Physical Form ─────────────────────────────────────────── */
 
-.settings-email {
-  margin-bottom: 0.8rem;
-  font-size: 0.9rem;
+.physical-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.physical-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.physical-field input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.physical-field input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.bmi-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.bmi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.bmi-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #22c55e;
+}
+
+.bmi-value.bmi-underweight { color: #60a5fa; }
+.bmi-value.bmi-healthy     { color: #22c55e; }
+.bmi-value.bmi-overweight  { color: #fb923c; }
+.bmi-value.bmi-obese       { color: #f43f5e; }
+
+.bmi-status {
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 
-.settings-email span {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.settings-primary-btn {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+.settings-save-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #000;
   border: none;
-  padding: 0.6rem 1.25rem;
-  border-radius: var(--radius-full);
-  color: white;
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
   font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
   font-family: var(--font-body);
   transition: var(--transition-fast);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
 }
 
-.settings-primary-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35);
+.settings-save-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.settings-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Hero Archetype ────────────────────────────────────────── */
+
+.class-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
-/* Toggle switches */
+.class-tile {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-body);
+  position: relative;
+  text-align: center;
+}
+
+.class-tile:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-2px);
+}
+
+.class-tile--active {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.15);
+}
+
+.class-tile:disabled {
+  cursor: default;
+}
+
+.class-tile-icon { font-size: 1.8rem; }
+
+.class-tile-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.class-tile-stat {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.class-tile-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--gold);
+  color: #000;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+/* ── Motivation picker ─────────────────────────────────────── */
+
+.motivation-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.motivation-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  text-align: left;
+}
+
+.motivation-tile:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--border-hover);
+}
+
+.motivation-tile--active {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: #22c55e;
+  color: var(--text-primary);
+}
+
+/* ── Activity Preferences ──────────────────────────────────── */
+
+.settings-toggles {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 
 .settings-toggle-row {
   display: flex;
@@ -145,9 +319,9 @@
   gap: 0.75rem;
   font-size: 0.9rem;
   font-weight: 500;
-  margin-bottom: 0.6rem;
   color: var(--text-secondary);
   cursor: pointer;
+  padding: 0.5rem 0.25rem;
 }
 
 .settings-toggle-row input[type="checkbox"] {
@@ -186,12 +360,12 @@
   background: var(--bg-deep);
 }
 
-/* Daily Goal Section */
+/* Daily Goal */
 .settings-goal-container {
-  margin-top: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .settings-goal-label {
@@ -237,10 +411,7 @@
   transition: var(--transition-fast);
 }
 
-.settings-goal-save:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-}
+.settings-goal-save:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3); }
 
 .settings-goal-hint {
   font-size: 0.75rem;
@@ -248,7 +419,38 @@
   margin: 0;
 }
 
-/* Danger zone */
+/* ── Account ───────────────────────────────────────────────── */
+
+.settings-email {
+  margin-bottom: 0.8rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.settings-email span {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.settings-primary-btn {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.settings-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35);
+}
+
+/* ── Danger zone ───────────────────────────────────────────── */
 
 .danger-card {
   border-color: rgba(244, 63, 94, 0.2);
@@ -270,4 +472,107 @@
   background: rgba(244, 63, 94, 0.2);
   border-color: rgba(244, 63, 94, 0.5);
   transform: translateY(-1px);
+}
+
+/* ── Class confirm overlay ─────────────────────────────────── */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.confirm-modal {
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.85) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.confirm-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+
+.confirm-modal h3 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  color: #fff;
+}
+
+.confirm-body {
+  font-size: 0.9rem;
+  color: #a1a1aa;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.confirm-body strong { color: #fff; }
+
+.confirm-penalty {
+  display: block;
+  margin-top: 0.5rem;
+  color: #fb923c;
+  font-size: 0.85rem;
+}
+
+.confirm-btns {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.confirm-cancel {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+}
+
+.confirm-cancel:hover { background: rgba(255, 255, 255, 0.12); }
+
+.confirm-accept {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  border: none;
+  color: #000;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+}
+
+.confirm-accept:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* ── Responsive ────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .physical-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .class-switcher {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

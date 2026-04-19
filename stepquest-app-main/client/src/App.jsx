@@ -12,6 +12,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Leaderboard from "./pages/Leaderboard";
 import Friends from "./pages/Friends";
 import Settings from "./pages/Settings";
+import Onboarding from "./pages/Onboarding";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -122,6 +123,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/onboarding"
+                  element={
+                    <ProtectedRoute>
+                      <Onboarding />
                     </ProtectedRoute>
                   }
                 />

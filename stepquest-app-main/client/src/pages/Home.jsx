@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuest } from "../context/QuestContext";
-import { startStepTracking } from "../services/realStepAPI";
+import { startStepTracking, stopStepTracking } from "../services/realStepAPI";
 import { useNavigate } from "react-router-dom";
 import { useAchievements } from "../context/Achievement";
 import { useInventory } from "../context/InventoryContext";
@@ -41,7 +41,15 @@ export default function Home() {
     questProgress,
     setQuestProgress,
     announcedZones,
-    setAnnouncedZones
+    setAnnouncedZones,
+    onboardingCompleted,
+    setOnboardingCompleted,
+    setWeight,
+    setHeight,
+    setAge,
+    setHeroClass,
+    setMotivation,
+    setBaseStats
   } = useQuest();
 
   const { addItem } = useInventory();
@@ -104,7 +112,13 @@ export default function Home() {
 
     if (data) {
       const dbDate = data.last_updated ? String(data.last_updated).split("T")[0] : "";
-      isNewDay = dbDate !== today;
+
+      // ----- NEW DAY DETECTION -----
+      // Use localStorage last_date as the primary source of truth.
+      // Supabase's last_updated may be stale if the 3s debounce didn't fire before a reload.
+      // It's only a new day if BOTH local storage AND Supabase agree the date has rolled over.
+      const localLastDate = window.localStorage.getItem(`sq_${user.id}_last_date`);
+      isNewDay = (localLastDate !== today) && (dbDate !== today);
 
       // Take the HIGHER of local cache vs Supabase to never lose progress
       const dbStepsToday = isNewDay ? 0 : (data.steps_today ?? 0);
@@ -112,15 +126,41 @@ export default function Home() {
       const dbXp = data.xp ?? 0;
       const dbLevel = data.level ?? 1;
       const dbDailyGoal = data.daily_goal ?? 5000;
+      const dbOnboarding = data.onboarding_completed ?? false;
+      const dbWeight = data.weight_kg ?? 0;
+      const dbHeight = data.height_cm ?? 0;
+      const dbAge = data.age ?? 0;
+      const dbHeroClass = data.hero_class ?? null;
+      const dbMotivation = data.motivation ?? null;
+      const dbBaseStats = data.base_stats ?? { atk: 5, def: 5, spd: 5, luck: 5, end: 5, mag: 5 };
 
-      // Only take Math.max if it is NOT a new day, otherwise hard reset to 0
+      // Numeric fields: always take the higher of localStorage vs Supabase
+      // so a stale Supabase record can never lower progress already saved locally.
       setStepsToday(prev => isNewDay ? 0 : Math.max(Number(prev) || 0, dbStepsToday));
       setTotalSteps(prev => Math.max(Number(prev) || 0, dbTotalSteps));
       setXp(prev => Math.max(Number(prev) || 0, dbXp));
       setLevel(prev => Math.max(Number(prev) || 1, dbLevel));
-      setDailyGoal(dbDailyGoal); // goal comes from server authority
+      setDailyGoal(dbDailyGoal); // server is authority for goal
 
-      // Update last_updated + reset daily steps in Supabase
+      setOnboardingCompleted(dbOnboarding);
+      setWeight(dbWeight);
+      setHeight(dbHeight);
+      setAge(dbAge);
+
+      // String/object fields: prefer localStorage over Supabase.
+      // Supabase may have null (missing columns, stale row) but localStorage
+      // is written synchronously and is always the freshest data source.
+      const localHeroClass = window.localStorage.getItem(`sq_${user.id}_hero_class`);
+      const localMotivation = window.localStorage.getItem(`sq_${user.id}_motivation`);
+      const rawBaseStats = window.localStorage.getItem(`sq_${user.id}_base_stats`);
+      let localBaseStats = null;
+      try { localBaseStats = rawBaseStats ? JSON.parse(rawBaseStats) : null; } catch {}
+
+      setHeroClass(localHeroClass || dbHeroClass);
+      setMotivation(localMotivation || dbMotivation);
+      setBaseStats(localBaseStats || dbBaseStats);
+
+      // Update last_updated + reset daily steps in Supabase if new day
       if (isNewDay) {
         await supabase
           .from("player_stats")
@@ -142,8 +182,10 @@ export default function Home() {
         xp: 0,
         level: 1,
         daily_goal: 5000,
+        onboarding_completed: false,
         last_updated: today,
       });
+      setOnboardingCompleted(false);
     }
 
     // Load Streak
@@ -374,9 +416,22 @@ export default function Home() {
       const leftoverXp = xp - needed;
       const newLevel = level + 1;
 
-      // Update states
+      // Update React state
       setXp(leftoverXp);
       setLevel(newLevel);
+
+      // Immediately push the new level to Supabase — don't rely on the 3s debounce.
+      // This ensures reloading right after leveling up doesn't roll back to the old level.
+      if (user) {
+        const today = new Date().toISOString().split("T")[0];
+        supabase.from("player_stats").update({
+          level: newLevel,
+          xp: leftoverXp,
+          last_updated: today,
+        }).eq("user_id", user.id).then(({ error }) => {
+          if (error) console.error("Level-up Supabase sync failed:", error.message);
+        });
+      }
 
       // 🎁 Guaranteed Reward every 2 levels
       if (newLevel % 2 === 0) {
@@ -384,10 +439,10 @@ export default function Home() {
         addItem(bonusItem);
         console.log(`🎁 Level Up Reward: ${bonusItem.name}`);
         setRecentRewardData(bonusItem);
-        setShowQuestModal(true); // Reuse the quest modal to show the shiny new item
+        setShowQuestModal(true);
       }
 
-      // Trigger Modal
+      // Trigger Level Modal
       setRecentLevelData({
         oldLevel: level,
         newLevel: newLevel,
@@ -396,7 +451,9 @@ export default function Home() {
       setShowLevelModal(true);
       logSocialActivity(user.id, 'level_up', `reached Level ${newLevel}!`);
     }
-  }, [xp, level, totalSteps]);
+  // totalSteps removed from deps — it's not used in this logic and was causing
+  // unnecessary re-runs on every step gained.
+  }, [xp, level, user]);
 
   const handleStepGainRef = useRef(null);
 
@@ -415,6 +472,9 @@ export default function Home() {
       setTotalSteps((prev) => prev + steps);
       if (handleStepGainRef.current) handleStepGainRef.current(steps);
     }, (err) => showToast(err, "error"));
+
+    // Cleanup: remove the devicemotion listener when the component unmounts
+    return () => stopStepTracking();
   }, []);
 
   /* -----------------------------
