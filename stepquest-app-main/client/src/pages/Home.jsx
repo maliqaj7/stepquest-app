@@ -494,8 +494,27 @@ export default function Home() {
   /* -----------------------------
         MAIN LOGIC FOR STEP GAINS
   ------------------------------*/
+  // ─── THROTTLED SYNC ───
+  const lastSyncTimeRef = useRef(0);
+  const throttledSave = (statsToSave) => {
+    const now = Date.now();
+    if (now - lastSyncTimeRef.current >= 1000) {
+      saveStats(statsToSave);
+      lastSyncTimeRef.current = now;
+    }
+  };
+
   const handleStepGain = (amount) => {
     const newTotal = totalSteps + amount;
+
+    // Trigger Throttled Sync during active walking
+    throttledSave({
+      steps_today: stepsToday + amount,
+      total_steps: newTotal,
+      xp,
+      level
+    });
+
     const questGoal = Number(activeQuest?.steps || 0);
 
     // ZONE UNLOCK DETECTION (Batched)
@@ -583,13 +602,23 @@ export default function Home() {
   ------------------------------*/
   const simulateSteps = () => {
     const fakeSteps = 5000;
+
     // Functional updates to ensure we always use the latest values
     setStepsToday((prev) => {
       const net = prev + fakeSteps;
       setTotalSteps((tPrev) => {
         const tNet = tPrev + fakeSteps;
+        
+        // Immediate, aggressive sync for simulations
+        saveStats({
+          steps_today: net,
+          total_steps: tNet,
+          xp,
+          level
+        });
+
         // Trigger the logic based on the calculated net values
-        handleStepGain(fakeSteps, tNet);
+        handleStepGain(fakeSteps);
         return tNet;
       });
       return net;

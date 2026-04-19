@@ -327,6 +327,32 @@ function HomePage({ setPage }) {
   );
 }
 
+// ─── CountUp Component ─────────────────────────────────────────────────────────
+function CountUpValue({ value, duration = 1000 }) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const startTime = useRef(null);
+  const startValue = useRef(value);
+
+  useEffect(() => {
+    if (value === displayValue) return;
+    startValue.current = displayValue;
+    startTime.current = null;
+    let animationFrame;
+    const animate = (timestamp) => {
+      if (!startTime.current) startTime.current = timestamp;
+      const progress = Math.min((timestamp - startTime.current) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 4); // outQuart
+      const current = Math.floor(startValue.current + (value - startValue.current) * easedProgress);
+      setDisplayValue(current);
+      if (progress < 1) animationFrame = requestAnimationFrame(animate);
+    };
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [value]);
+
+  return <span>{displayValue.toLocaleString()}</span>;
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function DashboardPage({ setPage }) {
   const { session } = useAuth();
@@ -373,6 +399,35 @@ function DashboardPage({ setPage }) {
       }
       setLoading(false);
     });
+
+    // ─── REALTIME SUBSCRIPTION ───
+    // Listen for changes to player_stats in real-time
+    const channel = supabase
+      .channel(`db-changes-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'player_stats', filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const s = payload.new;
+          setStats(prev => ({ 
+            ...prev, 
+            ...s,
+            // Ensure we keep the highest value if somehow the realtime packet is older (unlikely)
+            total_steps: Math.max(prev?.total_steps || 0, s.total_steps || 0),
+            steps_today: Math.max(prev?.steps_today || 0, s.steps_today || 0)
+          }));
+          
+          if (s.total_steps) {
+            const unlockedCount = ZONE_REQUIREMENTS.filter(req => s.total_steps >= req).length;
+            setZones(unlockedCount);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [session]);
 
 
@@ -392,12 +447,12 @@ function DashboardPage({ setPage }) {
   const xpPct     = stats ? Math.min(100, Math.round(((stats.xp || 0) % xpForNext) / xpForNext * 100)) : 0;
 
   const statCards = [
-    { icon:"🥾", val:(stats?.total_steps||0).toLocaleString(),   lbl:"Total Steps"    },
-    { icon:"✨", val:(stats?.xp||0).toLocaleString(),            lbl:"Level XP"       },
-    { icon:"⚔️", val: stats?.level||1,                           lbl:"Hero Level"     },
-    { icon:"🎯", val:(stats?.daily_goal||5000).toLocaleString(), lbl:"Daily Goal"     },
-    { icon:"👣", val:(stats?.steps_today||0).toLocaleString(),   lbl:"Steps Today"    },
-    { icon:"🗺️", val: zones,                                     lbl:"Zones Unlocked" },
+    { icon:"🥾", val: stats?.total_steps || 0,   lbl:"Total Steps"    },
+    { icon:"✨", val: stats?.xp || 0,            lbl:"Level XP"       },
+    { icon:"⚔️", val: stats?.level || 1,         lbl:"Hero Level"     },
+    { icon:"🎯", val: stats?.daily_goal || 5000, lbl:"Daily Goal"     },
+    { icon:"👣", val: stats?.steps_today || 0,   lbl:"Steps Today"    },
+    { icon:"🗺️", val: zones,                     lbl:"Zones Unlocked" },
   ];
 
   return (
@@ -428,7 +483,9 @@ function DashboardPage({ setPage }) {
         {statCards.map((s,i) => (
           <div key={i} className="stat-card">
             <div style={{ fontSize:"1.5rem", marginBottom:".5rem" }}>{s.icon}</div>
-            <div className="stat-val">{s.val}</div>
+            <div className="stat-val">
+              {typeof s.val === 'number' ? <CountUpValue value={s.val} /> : s.val}
+            </div>
             <div className="stat-lbl">{s.lbl}</div>
           </div>
         ))}
