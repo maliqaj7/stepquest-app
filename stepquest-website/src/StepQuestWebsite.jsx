@@ -16,39 +16,50 @@ const BG   = "#09090b";
 
 // ─── Static Data ──────────────────────────────────────────────────────────────
 const FEATURES = [
-  { icon:"🥾", title:"Steps → XP",    desc:"Every footfall earns experience. Walk more, level up faster, unlock new hero powers.", color:"#4ade80" },
-  { icon:"📜", title:"Epic Quests",   desc:"Daily bounties and epic quest chains on the Tavern Bounty Board that scale to you.",   color:"#fbbf24" },
-  { icon:"⚔️", title:"Boss Battles",  desc:"Unlock zone guardians and fight turn-based RPG battles powered by your step stats.",   color:"#ef4444" },
-  { icon:"🎒", title:"Loot & Gear",   desc:"Earn rare item drops after quests. Equip gear to boost ATK, DEF, SPD and more.",       color:"#a855f7" },
-  { icon:"🏆", title:"Leaderboards",  desc:"Real-time global and friends rankings reset seasonally to keep competition fierce.",    color:"#3b82f6" },
-  { icon:"📊", title:"Step Insights", desc:"Beautiful analytics across day, week, month and year. Watch your hero's growth.",      color:"#f59e0b" },
+  { icon:"🥾", title:"Steps → XP",         desc:"Every footfall earns experience. Walk more, level up faster, and earn 2 skill points every time you level up.", color:"#4ade80" },
+  { icon:"📜", title:"Tavern Bounty Board", desc:"Five difficulty tiers — Easy, Normal, Hard, Epic and Mythic. Tear off a bounty and walk to complete it for XP and loot.", color:"#fbbf24" },
+  { icon:"🗺️", title:"GPS Zone Map",        desc:"Your real-world location powers a live map. Unlock zones as your steps grow and discover boss guardians hidden nearby.", color:"#22d3ee" },
+  { icon:"⚔️", title:"Boss Battles",        desc:"Turn-based combat driven by six stats — ATK, DEF, SPD, LUCK, END, and MAG. Allocate your skill points wisely.", color:"#ef4444" },
+  { icon:"🎒", title:"Loot & Gear",         desc:"Six rarity tiers from Common to Mythic. Equip gear to permanently boost your stats and dominate tougher zones.", color:"#a855f7" },
+  { icon:"👥", title:"Friends & Parties",   desc:"Add friends by email, build your party, and compete head-to-head on a shared leaderboard that resets each season.", color:"#3b82f6" },
+  { icon:"🧙", title:"AI Quest Master",     desc:"Describe any adventure and the AI Quest Master forges a custom quest — with steps and XP scaled by difficulty.", color:"#f59e0b" },
+  { icon:"📊", title:"Step Insights",       desc:"Day, week, month and year analytics. See your peak periods, averages, and long-term hero growth at a glance.", color:"#10b981" },
 ];
 
 const FAQ = [
-  { q:"How does StepQuest track my steps?",       a:"StepQuest syncs with Apple Health on iOS and Google Fit on Android, pulling step data automatically throughout the day." },
-  { q:"Is the app available on iOS and Android?", a:"Yes! StepQuest is on the App Store (iOS 15+) and Google Play (Android 8+). Progress syncs across all devices." },
-  { q:"How do I create an account?",              a:"Download the app, tap Sign Up, and enter your email and password. Use those same credentials here on the web portal." },
-  { q:"How are XP and levels calculated?",        a:"You earn 1 XP per 10 steps. Quest and boss completions grant bonus XP. Every level-up gives 2 skill points to allocate." },
-  { q:"Can I compete with friends?",              a:"Yes. Add friends by email in the app's Friends section. You'll share leaderboard space and can join guild events." },
-  { q:"What are zone boss battles?",              a:"Step milestones unlock GPS map zones. Each zone has a guardian boss. Your ATK, DEF, SPD, LUCK, END stats decide the fight." },
-  { q:"How does loot rarity work?",               a:"Quests drop loot across six tiers: Common to Mythic. Higher difficulty quests improve your odds for rarer drops." },
-  { q:"Is my health data private?",               a:"Raw health data never leaves your device. Only aggregate step counts sync for quests and leaderboards. We never sell data." },
-  { q:"How do I reset my password?",              a:"Use the Forgot Password link on the login page. A reset link arrives within 2 minutes." },
-  { q:"What are seasonal events?",                a:"Every 3 months a new season launches with themed bosses, exclusive cosmetics, fresh rankings, and prizes for top heroes." },
+  { q:"How does StepQuest track my steps?",       a:"StepQuest syncs with Apple Health on iOS and Google Fit on Android, pulling step data automatically throughout the day without draining battery." },
+  { q:"Is the app available on iOS and Android?", a:"Yes! StepQuest is available on iOS and Android. Your progress, inventory, and leaderboard position sync seamlessly across devices." },
+  { q:"How do I create an account?",              a:"Download the app, tap Sign Up, and enter your email and password. Use those exact same credentials here on the web portal too." },
+  { q:"How are XP and levels calculated?",        a:"You earn 1 XP per 10 steps. Quest completions and boss victories grant bonus XP. Every level-up awards 2 skill points to allocate across your 6 stats." },
+  { q:"What are the six hero stats?",             a:"ATK increases boss battle damage, DEF reduces damage taken, SPD boosts dodge chance and first strike, LUCK improves loot rarity, END raises max HP, and MAG powers special abilities." },
+  { q:"What difficulty tiers do quests have?",    a:"There are five tiers: Easy (1,500 steps, 50 XP), Normal, Hard, Epic, and Mythic. Higher tiers drop better loot and grant more XP." },
+  { q:"How does the AI Quest Master work?",       a:"In the app, describe any adventure in your own words and the AI Quest Master generates a custom quest — complete with a step goal, XP reward, and randomised difficulty tier." },
+  { q:"How do I add friends?",                    a:"Go to the Friends tab in the app and enter your friend's email. Once added you'll share a party leaderboard and can compete in guild events." },
+  { q:"What are zone boss battles?",              a:"As your total steps grow, zones on your GPS map unlock. Each zone harbours a guardian boss. Your six stats — ATK, DEF, SPD, LUCK, END, MAG — decide the turn-based fight." },
+  { q:"How does loot rarity work?",               a:"Quests trigger loot rolls across six tiers: Common, Uncommon, Rare, Epic, Legendary, and Mythic. Higher difficulty quests significantly improve your drop chances." },
+  { q:"Can I customise my hero's avatar?",       a:"Yes — choose from four knight presets (Hero Knight, Evil Knight, Female Knight, Goblin Knight) or upload your own custom sprite in the Profile section." },
+  { q:"Is my health data private?",               a:"Your raw health data never leaves your device. Only aggregate step counts sync to our servers for quest progress and leaderboards. We never sell personal data." },
+  { q:"How do I reset my password?",              a:"Use the Forgot Password link on the login page. A secure reset link arrives in your inbox within 2 minutes — check your spam folder if you don't see it." },
+  { q:"What are seasonal events?",                a:"Every 3 months a new season launches with themed boss fights, exclusive cosmetic rewards, a fresh leaderboard reset, and prizes for top finishers. Season 1: The Awakening is live now." },
 ];
 
 const SYSTEM_PROMPT = `You are the StepQuest Quest Master — a wise, encouraging AI assistant for StepQuest, a gamified fitness app that turns daily steps into RPG progression.
 
-Key facts:
-- Steps earn XP (1 XP per 10 steps), levelling up the hero. Each level grants 2 skill points.
-- Stats: ATK (battle damage), DEF (damage reduction), SPD (dodge + first strike), LUCK (loot rarity), END (max HP).
-- Daily quests: Easy (1,500 steps, 50 XP) to Epic (12,000 steps, 600 XP).
-- Zone boss battles use hero stats in turn-based combat. 10 zones on a GPS map.
-- Loot: 6 tiers Common to Mythic. Higher difficulty = better drop chances.
-- Leaderboards: global top 20, seasonal resets every 3 months.
-- Platform: iOS (Apple Health) and Android (Google Fit).
+Key facts about the app:
+- Steps earn XP (1 XP per 10 steps). Each level-up grants 2 skill points.
+- Six hero stats: ATK (battle damage), DEF (damage reduction), SPD (dodge + first strike), LUCK (loot rarity), END (max HP and recovery), MAG (special abilities).
+- Five quest difficulty tiers: Easy (1,500 steps, 50 XP), Normal (~2,000 steps, 75 XP), Hard (~4,200 steps, 120 XP), Epic (~8,000-12,000 steps, 180 XP), Mythic (~3,750 steps scaled, 300 XP).
+- Named bounties: Clear the Thicket (Easy, 1,500 steps), Border Patrol (Normal, 3,500 steps), Mountain Summit Dash (Hard, 8,000 steps), Dragon's Errand (Epic, 12,000 steps).
+- AI Quest Master: user describes an adventure, app generates a custom quest with random difficulty and scaled steps.
+- GPS Zone Map: real-world map unlocks zones as total steps grow. Each zone has a turn-based boss fight.
+- Loot: 6 rarity tiers (Common to Mythic). Higher difficulty = better drop chances.
+- Leaderboards: global top 20, friends-only view, seasonal resets every 3 months.
+- Friends: add by email, form parties, compete in guild events.
+- Avatar: 4 knight presets + custom image upload.
+- Settings: sound effects toggle, haptics toggle, adjustable daily step goal.
+- Platform: iOS (Apple Health) and Android (Google Fit). Web portal for support and account.
 
-Speak with a slightly heroic, medieval flair but stay clear and practical. Keep answers concise.`;
+Speak with a slightly heroic, medieval flair but stay clear and practical. Keep answers concise. If unsure about a specific user's account data, direct them to check in-app.`;
 
 const STARS = Array.from({ length: 90 }, (_, i) => ({
   id: i, x: ((i * 137.508) % 100).toFixed(1), y: ((i * 97.341) % 100).toFixed(1),
@@ -492,9 +503,8 @@ function DashboardPage({ setPage }) {
       </div>
 
       <div className="card" style={{ padding:"1.75rem", marginBottom:"1.5rem" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1.1rem" }}>
+        <div style={{ marginBottom:"1.1rem" }}>
           <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1rem", fontWeight:700, color:GOLD, margin:0, letterSpacing:".05em" }}>⚙️ Username</h2>
-          <button className="nav-link" style={{ fontSize:".6rem" }} onClick={() => console.log("Current Stats Object:", stats)}>Debug Stats to Console</button>
         </div>
         <MsgBox msg={msg} />
         <div style={{ display:"flex", gap:".75rem" }}>
@@ -517,12 +527,14 @@ function DashboardPage({ setPage }) {
 function FeaturesPage({ setPage }) {
   const { session } = useAuth();
   const details = [
-    { icon:"🥾", title:"Step Tracking & XP Engine",  color:"#4ade80", points:["1 XP earned per every 10 steps","Syncs with Apple Health & Google Fit","Real-time updates throughout the day","Bonus XP for streaks and milestones"],         desc:"The foundation of StepQuest is a seamless step engine. Every stride converts to experience that grows your hero, unlocks quests, and powers boss battles." },
-    { icon:"📜", title:"Quest & Bounty System",       color:"#fbbf24", points:["Daily rotating tavern bounties","Four difficulty tiers: Easy to Epic","AI Quest Master can forge custom quests","Progress tracked in real time"],                desc:"The Tavern Bounty Board refreshes daily with challenges calibrated to real distances. From 1,500-step strolls to 12,000-step marathons, there's a quest for every hero." },
-    { icon:"⚔️", title:"Zone Boss Battles",           color:"#ef4444", points:["10 unique world zones to discover","Turn-based combat system","Boss victories drop rare loot","Rebattle any boss for bonus XP"],                             desc:"Each zone you unlock harbors a powerful guardian boss waiting to test your built stats in strategic turn-based combat." },
-    { icon:"🎒", title:"Loot & Inventory System",     color:"#a855f7", points:["Six tiers from Common to Mythic","Items boost ATK, DEF, SPD, LUCK, END","Persistent inventory across all sessions","Sort by rarity or acquisition order"], desc:"Quest completions trigger loot rolls with rarity-based drop tables. Equip your best gear to maximise battle performance." },
-    { icon:"🏆", title:"Global Leaderboards",         color:"#3b82f6", points:["Top 20 global hero rankings","Seasonal resets every 3 months","Friends-only filtered view","Live step count updates daily"],                                  desc:"Compete globally or filter to your friend group. Seasons keep it fresh with reset rankings and exclusive cosmetic rewards." },
-    { icon:"📊", title:"Step Insights & Analytics",   color:"#f59e0b", points:["Day / Week / Month / Year views","Peak step period identification","Average and trend analysis","Beautiful animated line charts"],                           desc:"The Insights page transforms raw step data into clear charts. Spot patterns, track consistency, and understand long-term trends." },
+    { icon:"🥾", title:"Step Tracking & XP Engine",  color:"#4ade80", points:["1 XP earned per every 10 steps","Syncs with Apple Health & Google Fit","Real-time updates throughout the day","2 skill points earned on every level-up"],       desc:"The foundation of StepQuest is a seamless step engine. Every stride converts to experience that grows your hero, unlocks quests, and powers boss battles." },
+    { icon:"📜", title:"Tavern Bounty Board",         color:"#fbbf24", points:["Five tiers: Easy, Normal, Hard, Epic, Mythic","Named bounties from 1,500 to 12,000 steps","AI Quest Master forges fully custom quests","Loot drops improve with difficulty"], desc:"From Clear the Thicket (1,500 steps) to Dragon's Errand (12,000 steps), the Bounty Board always has a challenge for your current level. Mythic quests are for the truly devoted." },
+    { icon:"🗺️", title:"GPS Zone Map",                color:"#22d3ee", points:["Real-world GPS map centred on your location","Zones radiate outward up to 10km","Step milestones unlock each new zone","Dashed path connects all discovered zones"],  desc:"Your actual location powers the map. Ten zones spiral outward using a golden-angle distribution, placing each boss at a unique real-world position you'll recognise." },
+    { icon:"⚔️", title:"Boss Battles",                color:"#ef4444", points:["Six stats: ATK, DEF, SPD, LUCK, END, MAG","Turn-based combat system","Boss victories drop rare loot","Rebattle unlocked bosses for bonus XP"],                   desc:"Each zone harbours a guardian boss. Your six allocated stats determine every turn of combat. Defeat them once to unlock loot — beat them again for bonus XP." },
+    { icon:"🎒", title:"Loot & Inventory",            color:"#a855f7", points:["Six tiers from Common to Mythic","Items boost ATK, DEF, SPD, LUCK, END and MAG","Sort by rarity or newest first","Persistent across all sessions"],             desc:"Quest completions trigger loot rolls. Gear boosts all six stats and rare drops can dramatically change your combat performance." },
+    { icon:"👥", title:"Friends & Party System",      color:"#3b82f6", points:["Add friends by email address","View their step counts and leaderboard rank","Compete in guild events together","Party list always synced live"],                 desc:"Build your adventuring party. Add friends by email, track each other's progress, and compete in seasonal guild events for exclusive rewards." },
+    { icon:"🧙", title:"AI Quest Master",             color:"#f59e0b", points:["Describe any quest in your own words","Random difficulty tier assigned","Steps and XP scaled automatically","Accept directly from the generation screen"],       desc:"Type any scenario — 'sprint through the marketplace' or 'march to the citadel' — and the AI Quest Master turns it into a real quest with a step goal and XP reward." },
+    { icon:"📊", title:"Step Insights & Analytics",   color:"#10b981", points:["Day / Week / Month / Year views","Peak step period identification","Average and trend line","Dots highlight your personal best"],                              desc:"The Insights page visualises your step data across four time scales. Identify patterns, track streaks, and watch your hero's journey unfold over months and years." },
   ];
   return (
     <div style={{ paddingTop:"62px", maxWidth:"980px", margin:"0 auto", padding:"6rem 2rem" }}>
@@ -540,9 +552,6 @@ function FeaturesPage({ setPage }) {
                 <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1.12rem", fontWeight:700, color:f.color }}>{f.title}</h2>
               </div>
               <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1.05rem", color:"#a1a1aa", lineHeight:1.75, marginBottom:"1.4rem" }}>{f.desc}</p>
-              <button className="gold-btn" style={{ padding:".6rem 1.45rem", fontSize:".84rem" }} onClick={() => setPage(session?"dashboard":"login")}>
-                {session?"Open App →":"Try It Free →"}
-              </button>
             </div>
             <div style={{ flex:1, display:"flex", flexDirection:"column", gap:".8rem" }}>
               {f.points.map((p,j) => (
@@ -650,7 +659,6 @@ function CommunityPage() {
             <div style={{ fontFamily:"Cinzel,serif", fontSize:"1.08rem", fontWeight:700, color:"#f4f4f5" }}>Ends in 47 Days</div>
             <div style={{ fontFamily:"Crimson Pro,serif", fontSize:".93rem", color:"#a1a1aa", marginTop:".28rem" }}>Top 10 earn the exclusive "Trailblazer" cosmetic title</div>
           </div>
-          <button className="gold-btn" style={{ padding:".65rem 1.65rem", fontSize:".85rem" }}>View Season Rewards</button>
         </div>
       </div>
     </div>
@@ -658,19 +666,59 @@ function CommunityPage() {
 }
 
 // ─── Support ──────────────────────────────────────────────────────────────────
+function EmailModal({ onClose }) {
+  const [userEmail, setUserEmail] = useState("");
+  const [subject,   setSubject]   = useState("Support Request");
+  const open = () => {
+    if (!userEmail.trim()) { alert("Please enter your email first."); return; }
+    const body = `Hi StepQuest Support,%0D%0A%0D%0AMy email: ${userEmail.trim()}%0D%0A%0D%0A[Please describe your issue here]`;
+    window.location.href = `mailto:support@stepquest.me?subject=${encodeURIComponent(subject)}&body=${body}`;
+    onClose();
+  };
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(0,0,0,.72)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1.5rem" }} onClick={onClose}>
+      <div className="card" style={{ width:"100%", maxWidth:"420px", padding:"2rem" }} onClick={e=>e.stopPropagation()}>
+        <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1.1rem", fontWeight:700, color:GOLD, marginBottom:"1.5rem" }}>📧 Email Support</h2>
+        <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1rem", color:"#a1a1aa", marginBottom:"1.25rem", lineHeight:1.7 }}>
+          We'll open your email app with our support address pre-filled. What email address do you use?
+        </p>
+        <div style={{ display:"flex", flexDirection:"column", gap:".85rem" }}>
+          <div>
+            <label style={{ fontFamily:"Cinzel,serif", fontSize:".72rem", letterSpacing:".1em", color:GOLD, display:"block", marginBottom:".45rem" }}>YOUR EMAIL</label>
+            <input type="email" placeholder="your@email.com" value={userEmail} onChange={e=>setUserEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&open()} />
+          </div>
+          <div>
+            <label style={{ fontFamily:"Cinzel,serif", fontSize:".72rem", letterSpacing:".1em", color:GOLD, display:"block", marginBottom:".45rem" }}>SUBJECT</label>
+            <input type="text" value={subject} onChange={e=>setSubject(e.target.value)} />
+          </div>
+          <div style={{ display:"flex", gap:".75rem", marginTop:".35rem" }}>
+            <button className="ghost-btn" style={{ flex:1, padding:".7rem" }} onClick={onClose}>Cancel</button>
+            <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={open}>Open Email App →</button>
+          </div>
+        </div>
+        <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".82rem", color:"#52525b", marginTop:"1rem", textAlign:"center" }}>
+          Sending to: support@stepquest.me
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SupportPage({ setPage }) {
-  const [open,setOpen]=useState(null);
-  const [q,setQ]=useState("");
+  const [open,    setOpen]    = useState(null);
+  const [q,       setQ]       = useState("");
+  const [showMail,setShowMail]= useState(false);
   const filtered = FAQ.filter(f => f.q.toLowerCase().includes(q.toLowerCase()) || f.a.toLowerCase().includes(q.toLowerCase()));
   return (
     <div style={{ paddingTop:"62px", maxWidth:"760px", margin:"0 auto", padding:"6rem 2rem" }}>
+      {showMail && <EmailModal onClose={() => setShowMail(false)} />}
       <div style={{ textAlign:"center", marginBottom:"3.25rem", paddingTop:"2rem" }}>
         <Divider label="Help Center" />
         <h1 style={{ fontFamily:"Cinzel,serif", fontSize:"2.9rem", fontWeight:900, marginBottom:".9rem" }}>How Can We <span className="gold-text">Help You?</span></h1>
         <p style={{ fontSize:"1.1rem", color:"#a1a1aa", fontFamily:"Crimson Pro,serif", lineHeight:1.75, maxWidth:"490px", margin:"0 auto 1.85rem" }}>Browse our knowledge base or open the AI Quest Master for instant heroic guidance.</p>
         <div style={{ display:"flex", gap:".85rem", justifyContent:"center", flexWrap:"wrap" }}>
           <button className="gold-btn" onClick={() => setPage("chat")}>🤖 Chat with Quest Master</button>
-          <button className="ghost-btn">📧 Email Support</button>
+          <button className="ghost-btn" onClick={() => setShowMail(true)}>📧 Email Support</button>
         </div>
       </div>
       <div style={{ position:"relative", marginBottom:"1.85rem" }}>
@@ -698,7 +746,7 @@ function SupportPage({ setPage }) {
         <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1.05rem", color:"#a1a1aa", lineHeight:1.72, marginBottom:"1.4rem" }}>Our support guild is online Mon–Fri, 9am–6pm UTC. Average response under 4 hours.</p>
         <div style={{ display:"flex", gap:".85rem", justifyContent:"center", flexWrap:"wrap" }}>
           <button className="gold-btn"  style={{ padding:".65rem 1.65rem" }} onClick={() => setPage("chat")}>🤖 Open AI Chat</button>
-          <button className="ghost-btn" style={{ padding:".65rem 1.65rem" }}>📧 Email Us</button>
+          <button className="ghost-btn" style={{ padding:".65rem 1.65rem" }} onClick={() => setShowMail(true)}>📧 Email Us</button>
         </div>
       </div>
     </div>
