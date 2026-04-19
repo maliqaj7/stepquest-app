@@ -33,16 +33,16 @@ export function NotificationProvider({ children }) {
 function Toast({ message, type, duration, onRemove }) {
   const [isVisible, setIsVisible] = useState(true);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(onRemove, 300);
-  };
+  }, [onRemove]);
 
   // Auto-close after duration
   useEffect(() => {
     const timer = setTimeout(handleClose, duration);
     return () => clearTimeout(timer);
-  }, [duration, onRemove]); // add onRemove to deps for safety
+  }, [duration, handleClose]);
 
 
   const typeIcons = {

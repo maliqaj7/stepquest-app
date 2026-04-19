@@ -86,7 +86,13 @@ export async function fetchFriendsWithStats(userId) {
       // They added us. Their stats match owner_id
       s = finalStats.find(st => st.user_id === f.owner_id);
     }
-    return { ...f, stats: s };
+
+    // Determine the logical display name (the 'other' person in the link)
+    const displayName = f.owner_id === userId
+      ? (f.nickname || s?.username || f.friend_email?.split('@')[0] || "Unknown")
+      : (s?.username || "A Mysterious Hero");
+
+    return { ...f, stats: s, displayName };
   });
 }
 

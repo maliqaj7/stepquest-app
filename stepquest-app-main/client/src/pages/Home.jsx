@@ -476,6 +476,26 @@ export default function Home() {
   });
 
   /* -----------------------------
+        ACHIEVEMENT MONITORING
+  ------------------------------*/
+  useEffect(() => {
+    if (!statsLoaded) return;
+    
+    const MILESTONES = [
+      { id: "first100",   req: 100,   title: "First Steps",   desc: "Walked 100 total steps!" },
+      { id: "stepRookie", req: 1000,  title: "Step Rookie",   desc: "Walked 1,000 total steps!" },
+      { id: "stepWarrior",req: 10000, title: "Step Warrior",  desc: "Walked 10,000 total steps!" },
+      { id: "marathon",   req: 42195, title: "Marathoner",    desc: "Walked a full marathon distance!" },
+    ];
+
+    MILESTONES.forEach(m => {
+      if (totalSteps >= m.req) {
+        unlock(m.id, m.title, m.desc);
+      }
+    });
+  }, [totalSteps, statsLoaded, unlock]);
+
+  /* -----------------------------
         STEP TRACKING (REAL)
   ------------------------------*/
   useEffect(() => {
@@ -576,10 +596,6 @@ export default function Home() {
       });
     }
 
-    /* ACHIEVEMENTS */
-    if (newTotal >= 100) unlock("first100", "First Steps", "Walked 100 total steps!");
-    if (newTotal >= 1000) unlock("stepRookie", "Step Rookie", "Walked 1,000 total steps!");
-    if (newTotal >= 10000) unlock("stepWarrior", "Step Warrior", "Walked 10,000 total steps!");
 
     /* LOOT SYSTEM */
     const LOOT_STEP_INTERVAL = 50;
@@ -601,28 +617,24 @@ export default function Home() {
         SIMULATE STEPS (for testing)
   ------------------------------*/
   const simulateSteps = () => {
-    const fakeSteps = 5000;
+    const amount = 5000;
+    const newStepsToday = stepsToday + amount;
+    const newTotalSteps = totalSteps + amount;
 
-    // Functional updates to ensure we always use the latest values
-    setStepsToday((prev) => {
-      const net = prev + fakeSteps;
-      setTotalSteps((tPrev) => {
-        const tNet = tPrev + fakeSteps;
-        
-        // Immediate, aggressive sync for simulations
-        saveStats({
-          steps_today: net,
-          total_steps: tNet,
-          xp,
-          level
-        });
+    // 1. Update state immediately
+    setStepsToday(newStepsToday);
+    setTotalSteps(newTotalSteps);
 
-        // Trigger the logic based on the calculated net values
-        handleStepGain(fakeSteps);
-        return tNet;
-      });
-      return net;
+    // 2. Perform aggressive sync
+    saveStats({
+      steps_today: newStepsToday,
+      total_steps: newTotalSteps,
+      xp,
+      level
     });
+
+    // 3. Trigger remaining game logic (loot, XP, etc)
+    handleStepGain(amount);
   };
 
   /* -----------------------------

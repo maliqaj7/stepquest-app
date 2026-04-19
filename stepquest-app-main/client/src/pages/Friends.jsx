@@ -124,12 +124,13 @@ export default function Friends() {
   };
 
   const partySteps = useMemo(() => {
+    if (friends.length === 0) return 0;
     const friendTotal = friends.reduce((sum, f) => sum + (f.stats?.steps_today || 0), 0);
     return friendTotal + stepsToday;
   }, [friends, stepsToday]);
 
   const claimRaidReward = () => {
-    if (partySteps < raidGoal || rewardClaimed) return;
+    if (partySteps < raidGoal || rewardClaimed || friends.length === 0) return;
     const socialItems = LOOT_TABLE.filter(i => i.isSocialOnly);
     const reward = socialItems[Math.floor(Math.random() * socialItems.length)];
     addItem(reward);
@@ -148,6 +149,11 @@ export default function Friends() {
           <p className="stat muted" style={{ fontSize: '0.9rem' }}>
             Work with your friends to reach {raidGoal.toLocaleString()} total steps and unlock unique loot!
           </p>
+          {friends.length === 0 && (
+            <div style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+              ⚠️ Party Required: Recruit heroes below to begin!
+            </div>
+          )}
           <div className="raid-progress-container">
             <div 
               className="raid-progress-bar" 
@@ -160,7 +166,7 @@ export default function Friends() {
             </span>
             <button 
               className="gold-btn" 
-              disabled={partySteps < raidGoal || rewardClaimed}
+              disabled={partySteps < raidGoal || rewardClaimed || friends.length === 0}
               onClick={claimRaidReward}
               style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}
             >
@@ -251,7 +257,7 @@ export default function Friends() {
                    <div style={{ fontSize: '2rem' }}>👤</div>
                 </div>
                 <div className="friend-info">
-                  <h3>{f.nickname || f.friend_email.split('@')[0]}</h3>
+                  <h3>{f.displayName}</h3>
                   <div className="friend-level">LVL {f.stats?.level || 1}</div>
                 </div>
                 <button 
@@ -281,7 +287,7 @@ export default function Friends() {
               </div>
 
               <div className="friend-actions">
-                <button className="friend-btn cheer-btn" onClick={() => handleCheer(f.friend_id, f.nickname || f.friend_email)}>
+                <button className="friend-btn cheer-btn" onClick={() => handleCheer(f.friend_id, f.displayName)}>
                   📣 Cheer
                 </button>
                 <button className="friend-btn duel-btn" onClick={() => handleDuel(f)}>

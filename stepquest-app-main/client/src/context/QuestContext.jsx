@@ -51,35 +51,19 @@ const write = (key, value) => {
 const userKey = (userId, key) => `sq_${userId}_${key}`;
 
 // Data Migration & Read Helper (Synchronous)
-const getInitialValue = (userId, oldKeyStr, newKeyStr, fallback, isJSON = false) => {
+const getInitialValue = (userId, _, newKeyStr, fallback, isJSON = false) => {
   if (!userId) return fallback;
-  const newKey = `sq_${userId}_${newKeyStr}`;
-  const oldKey = `sq_${oldKeyStr}`;
+  const key = `sq_${userId}_${newKeyStr}`;
   
   try {
-    const oldVal = window.localStorage.getItem(oldKey);
-    const newVal = window.localStorage.getItem(newKey);
+    const val = window.localStorage.getItem(key);
+    if (val === null || val === "null" || val === "NaN" || val === "undefined") return fallback;
     
-    // Migrate if needed
-    if (oldVal && !newVal) {
-      window.localStorage.setItem(newKey, oldVal);
-      window.localStorage.removeItem(oldKey);
-      
-      if (isJSON) {
-        const parsedOld = JSON.parse(oldVal);
-        return parsedOld !== null ? parsedOld : fallback;
-      }
-      return oldVal !== "null" && oldVal !== "NaN" && oldVal !== "undefined" ? Number(oldVal) : fallback;
-    }
-    
-    // No migration needed. Read newKey safely.
     if (isJSON) {
-      if (!newVal) return fallback;
-      const parsedNew = JSON.parse(newVal);
-      return parsedNew !== null ? parsedNew : fallback;
-    } else {
-      return newVal != null && newVal !== "NaN" && newVal !== "undefined" && newVal !== "null" ? Number(newVal) : fallback;
+      const parsed = JSON.parse(val);
+      return parsed !== null ? parsed : fallback;
     }
+    return Number(val);
   } catch {
     return fallback;
   }
