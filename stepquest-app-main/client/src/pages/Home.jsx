@@ -420,16 +420,30 @@ export default function Home() {
       setXp(leftoverXp);
       setLevel(newLevel);
 
-      // Immediately push the new level to Supabase — don't rely on the 3s debounce.
-      // This ensures reloading right after leveling up doesn't roll back to the old level.
+      // Immediately push the new level AND complete progress to Supabase — don't rely on the 3s debounce.
+      // This ensures reloading right after leveling up doesn't roll back any progress (steps, xp, or level).
       if (user) {
         const today = new Date().toISOString().split("T")[0];
+        
+        // 1. Update primary stats (Level, XP, Steps)
         supabase.from("player_stats").update({
           level: newLevel,
           xp: leftoverXp,
+          total_steps: totalSteps,
+          steps_today: stepsToday,
           last_updated: today,
         }).eq("user_id", user.id).then(({ error }) => {
           if (error) console.error("Level-up Supabase sync failed:", error.message);
+          else console.log("✅ High-priority sync success: Level, XP, and Steps updated.");
+        });
+
+        // 2. Update daily history immediately
+        supabase.from("daily_steps").upsert({
+          user_id: user.id,
+          date: today,
+          steps: stepsToday
+        }, { onConflict: 'user_id,date' }).then(({ error }) => {
+          if (error) console.error("Level-up daily_steps sync failed:", error.message);
         });
       }
 

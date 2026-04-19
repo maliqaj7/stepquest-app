@@ -342,22 +342,39 @@ function DashboardPage({ setPage }) {
     if (!session) { setPage("login"); return; }
     const uid   = session.user.id;
     const today = new Date().toISOString().split("T")[0];
+    
     Promise.all([
       supabase.from("player_stats").select("*").eq("user_id", uid).single(),
-      supabase.from("daily_steps").select("steps").eq("user_id", uid).eq("date", today).single(),
-    ]).then(([{ data:s }, { data:d }]) => {
+      supabase.from("daily_steps").select("steps, date").eq("user_id", uid),
+    ]).then(([{ data:s }, { data:dailyHist }]) => {
       if (s) { 
-        setStats(s); 
+        // 1. Calculate aggregate total from all daily records (most durable source)
+        const aggregateTotal = (dailyHist || []).reduce((acc, row) => acc + (Number(row.steps) || 0), 0);
+        const accurateTotal = Math.max(Number(s.total_steps || 0), aggregateTotal);
+        
+        // 2. Find today's steps in the history vs player_stats
+        const todayRecord = (dailyHist || []).find(r => r.date === today);
+        const accurateToday = Math.max(Number(s.steps_today || 0), Number(todayRecord?.steps || 0));
+
+        // 3. Construct a merged source of truth
+        const mergedStats = { 
+          ...s, 
+          total_steps: accurateTotal,
+          steps_today: accurateToday 
+        };
+
+        setStats(mergedStats); 
+        setTodaySteps(accurateToday);
         setUsername(s.username || "");
-        // Calculate zones unlocked based on total_steps (authority source)
-        const totalSteps = Number(s.total_steps || 0);
-        const unlockedCount = ZONE_REQUIREMENTS.filter(req => totalSteps >= req).length;
+
+        // 4. Calculate zones unlocked based on the corrected total
+        const unlockedCount = ZONE_REQUIREMENTS.filter(req => accurateTotal >= req).length;
         setZones(unlockedCount);
       }
-      if (d) setTodaySteps(d.steps);
       setLoading(false);
     });
   }, [session]);
+
 
   const saveUsername = async () => {
     if (!username.trim()) return;
@@ -376,7 +393,7 @@ function DashboardPage({ setPage }) {
 
   const statCards = [
     { icon:"🥾", val:(stats?.total_steps||0).toLocaleString(),   lbl:"Total Steps"    },
-    { icon:"✨", val:(stats?.xp||0).toLocaleString(),            lbl:"Total XP"       },
+    { icon:"✨", val:(stats?.xp||0).toLocaleString(),            lbl:"Level XP"       },
     { icon:"⚔️", val: stats?.level||1,                           lbl:"Hero Level"     },
     { icon:"🎯", val:(stats?.daily_goal||5000).toLocaleString(), lbl:"Daily Goal"     },
     { icon:"👣", val:(stats?.steps_today||0).toLocaleString(),   lbl:"Steps Today"    },
