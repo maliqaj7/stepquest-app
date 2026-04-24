@@ -354,19 +354,19 @@ function Nav({ page, setPage, mob, setMob }) {
           <>
             <button className="ghost-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Log In</button>
             <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Get Started</button>
-            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => {
-              const a = document.createElement("a");
-              a.href = "/StepQuest.apk";
-              a.download = "StepQuest.apk";
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-            }}>🤖 Android</button>
-            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
-              alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap the Share button (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add\n\nDone!");
-            }}>🍎 iPhone</button>
           </>
         )}
+        <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => {
+          const a = document.createElement("a");
+          a.href = "/StepQuest.apk";
+          a.download = "StepQuest.apk";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }}>🤖 Android</button>
+        <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
+          alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap the Share button (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add\n\nDone!");
+        }}>🍎 iPhone</button>
         <button className="mob-t" style={{ display:"none", flexDirection:"column", gap:"5px", background:"none", border:"none", cursor:"pointer", padding:".25rem" }} onClick={() => setMob(!mob)}>
           {[0,1,2].map(i => <div key={i} style={{ width:"21px", height:"2px", background:mob&&i===1?"transparent":GOLD, transition:"all .2s", transform:mob?(i===0?"rotate(45deg) translate(5px,5px)":i===2?"rotate(-45deg) translate(5px,-5px)":"none"):"none" }} />)}
         </button>
@@ -374,14 +374,14 @@ function Nav({ page, setPage, mob, setMob }) {
       {mob && (
         <div style={{ position:"absolute", top:"62px", left:0, right:0, background:"rgba(9,9,11,.97)", borderBottom:"1px solid rgba(251,191,36,.14)", padding:"1.5rem 2rem 2rem", display:"flex", flexDirection:"column", gap:"1rem" }}>
           {links.map(l => <button key={l.id} className={`nav-link${page===l.id?" active":""}`} style={{ textAlign:"left", fontSize:".95rem" }} onClick={() => { setPage(l.id); setMob(false); }}>{l.label}</button>)}
-          <div style={{ display:"flex", gap:".75rem", marginTop:".5rem" }}>
+          <div style={{ display:"flex", gap:".75rem", marginTop:".5rem", flexWrap:"wrap" }}>
             {session
               ? <button className="danger-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { logout(); setMob(false); }}>Log Out</button>
               : <><button className="ghost-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Log In</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => { const a = document.createElement("a"); a.href = "/StepQuest.apk"; a.download = "StepQuest.apk"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setMob(false); }}>🤖 Android</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => { alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add"); setMob(false); }}>🍎 iPhone</button></>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button></>
             }
+            <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => { const a = document.createElement("a"); a.href = "/StepQuest.apk"; a.download = "StepQuest.apk"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setMob(false); }}>🤖 Android</button>
+            <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => { alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add"); setMob(false); }}>🍎 iPhone</button>
           </div>
         </div>
       )}
