@@ -1062,7 +1062,7 @@ function ChatPage() {
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-function LoginPage({ setPage, recoveryMode }) {
+function LoginPage({ setPage, recoveryMode, clearRecovery }) {
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState("");
   const [pw,setPw]=useState("");
@@ -1092,6 +1092,8 @@ function LoginPage({ setPage, recoveryMode }) {
     if (error) { setMsg("❌ " + error.message); return; }
     setMsg("✅ Password updated! Redirecting to dashboard…");
     setResettingPw(false);
+    if (clearRecovery) clearRecovery();
+    window.location.hash = "";
     setTimeout(() => setPage("dashboard"), 1500);
   };
 
@@ -1261,6 +1263,7 @@ export default function App() {
     if (full.includes("type=recovery") || full.includes("type%3Drecovery")) {
       setRecoveryMode(true);
       setPage("login");
+      window.history.replaceState(null, "", window.location.pathname);
     }
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -1309,7 +1312,7 @@ export default function App() {
           {page==="support"   && <SupportPage   setPage={navTo} />}
           {page==="chat"      && <ChatPage />}
           {page==="dashboard" && <DashboardPage setPage={navTo} />}
-          {page==="login"     && <LoginPage     setPage={navTo} recoveryMode={recoveryMode} />}
+          {page==="login"     && <LoginPage     setPage={navTo} recoveryMode={recoveryMode} clearRecovery={() => setRecoveryMode(false)} />}
           {page !== "chat" && <Footer setPage={navTo} />}
         </div>
       </div>
