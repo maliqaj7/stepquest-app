@@ -354,6 +354,17 @@ function Nav({ page, setPage, mob, setMob }) {
           <>
             <button className="ghost-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Log In</button>
             <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Get Started</button>
+            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => {
+              const a = document.createElement("a");
+              a.href = "/StepQuest.apk";
+              a.download = "StepQuest.apk";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}>🤖 Android</button>
+            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
+              alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap the Share button (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add\n\nDone!");
+            }}>🍎 iPhone</button>
           </>
         )}
         <button className="mob-t" style={{ display:"none", flexDirection:"column", gap:"5px", background:"none", border:"none", cursor:"pointer", padding:".25rem" }} onClick={() => setMob(!mob)}>
@@ -367,7 +378,9 @@ function Nav({ page, setPage, mob, setMob }) {
             {session
               ? <button className="danger-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { logout(); setMob(false); }}>Log Out</button>
               : <><button className="ghost-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Log In</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button></>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => { const a = document.createElement("a"); a.href = "/StepQuest.apk"; a.download = "StepQuest.apk"; document.body.appendChild(a); a.click(); document.body.removeChild(a); setMob(false); }}>🤖 Android</button>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => { alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add"); setMob(false); }}>🍎 iPhone</button></>
             }
           </div>
         </div>
@@ -418,6 +431,18 @@ function HomePage({ setPage }) {
                 <button className="ghost-btn" style={{ fontSize:".98rem", padding:".95rem 2.5rem" }} onClick={() => setPage("features")}>Explore Features →</button></>
           }
         </div>
+        {!session && (
+          <div style={{ marginTop:"1.25rem", animation:"fadeUp 1s ease" }}>
+            <button onClick={async () => {
+              const { error } = await supabase.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: window.location.origin } });
+              if (error) alert("Google sign-in failed: " + error.message);
+            }} style={{ padding:".78rem 2rem", borderRadius:"100px", border:"1px solid rgba(255,255,255,.15)", background:"rgba(255,255,255,.06)", color:"#f4f4f5", cursor:"pointer", display:"flex", alignItems:"center", gap:".75rem", fontFamily:"Crimson Pro,serif", fontSize:".98rem", transition:"all .2s", margin:"0 auto" }}
+              onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.12)"} onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"}>
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Sign up with Google
+            </button>
+          </div>
+        )}
         <div style={{ fontSize:"5.5rem", marginTop:"3.5rem", animation:"floatAnim 4s ease-in-out infinite", filter:"drop-shadow(0 0 28px rgba(251,191,36,.38))" }}>🏰</div>
         <div style={{ position:"absolute", bottom:"2rem", left:"50%", transform:"translateX(-50%)", display:"flex", flexDirection:"column", alignItems:"center", gap:".35rem", opacity:.45 }}>
           <span style={{ fontFamily:"Cinzel,serif", fontSize:".68rem", letterSpacing:".16em", color:GOLD }}>SCROLL</span>
@@ -1062,14 +1087,14 @@ function ChatPage() {
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
-function LoginPage({ setPage, recoveryMode, clearRecovery }) {
+function LoginPage({ setPage }) {
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState("");
   const [pw,setPw]=useState("");
   const [loading,setLoading]=useState(false);
   const [msg,setMsg]=useState("");
   const [forgot,setForgot]=useState(false);
-  const [resettingPw, setResettingPw] = useState(recoveryMode || false);
+  const [resettingPw, setResettingPw] = useState(false);
   const [newPw, setNewPw] = useState("");
 
   // Detect if user arrived via a password reset link
@@ -1092,8 +1117,6 @@ function LoginPage({ setPage, recoveryMode, clearRecovery }) {
     if (error) { setMsg("❌ " + error.message); return; }
     setMsg("✅ Password updated! Redirecting to dashboard…");
     setResettingPw(false);
-    if (clearRecovery) clearRecovery();
-    window.location.hash = "";
     setTimeout(() => setPage("dashboard"), 1500);
   };
 
@@ -1167,6 +1190,28 @@ function LoginPage({ setPage, recoveryMode, clearRecovery }) {
             </div>
           )}
           <MsgBox msg={msg} />
+
+          {!forgot && (
+            <>
+              <div style={{ display:"flex", flexDirection:"column", gap:".7rem", marginBottom:"1.5rem" }}>
+                <button onClick={async () => {
+                  setLoading(true); setMsg("");
+                  const { error } = await supabase.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: window.location.origin } });
+                  if (error) { setMsg("❌ " + error.message); setLoading(false); }
+                }} disabled={loading} style={{ width:"100%", padding:".82rem 1rem", borderRadius:"10px", border:"1px solid rgba(255,255,255,.12)", background:"rgba(255,255,255,.05)", color:"#f4f4f5", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:".75rem", fontFamily:"Crimson Pro,serif", fontSize:"1rem", transition:"all .2s" }}
+                  onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.1)"} onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.05)"}>
+                  <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  Continue with Google
+                </button>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"1.5rem" }}>
+                <div style={{ flex:1, height:"1px", background:"rgba(255,255,255,.08)" }} />
+                <span style={{ fontFamily:"Cinzel,serif", fontSize:".7rem", color:"#52525b", letterSpacing:".12em", textTransform:"uppercase" }}>Or</span>
+                <div style={{ flex:1, height:"1px", background:"rgba(255,255,255,.08)" }} />
+              </div>
+            </>
+          )}
+
           <div style={{ display:"flex", flexDirection:"column", gap:".9rem" }}>
             <div>
               <label style={{ fontFamily:"Cinzel,serif", fontSize:".72rem", letterSpacing:".1em", color:GOLD, display:"block", marginBottom:".45rem" }}>EMAIL</label>
@@ -1254,17 +1299,8 @@ export default function App() {
   const [mob,         setMob]         = useState(false);
   const [session,     setSession]     = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [recoveryMode, setRecoveryMode] = useState(false);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    const search = window.location.search;
-    const full = hash + search + window.location.href;
-    if (full.includes("type=recovery") || full.includes("type%3Drecovery")) {
-      setRecoveryMode(true);
-      setPage("login");
-      window.history.replaceState(null, "", window.location.pathname);
-    }
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setAuthLoading(false);
@@ -1312,7 +1348,7 @@ export default function App() {
           {page==="support"   && <SupportPage   setPage={navTo} />}
           {page==="chat"      && <ChatPage />}
           {page==="dashboard" && <DashboardPage setPage={navTo} />}
-          {page==="login"     && <LoginPage     setPage={navTo} recoveryMode={recoveryMode} clearRecovery={() => setRecoveryMode(false)} />}
+          {page==="login"     && <LoginPage     setPage={navTo} />}
           {page !== "chat" && <Footer setPage={navTo} />}
         </div>
       </div>
