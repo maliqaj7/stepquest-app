@@ -87,6 +87,8 @@ body{background:#09090b;color:#f4f4f5;font-family:'Crimson Pro',Georgia,serif;ov
 @keyframes pulseGlow{0%,100%{box-shadow:0 0 18px rgba(251,191,36,.28);}50%{box-shadow:0 0 44px rgba(251,191,36,.64);}}
 @keyframes riseUp{from{opacity:0;transform:translateY(38px);}to{opacity:1;transform:translateY(0);}}
 @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes shimmer{0%{background-position:-200% center;}100%{background-position:200% center;}}
+@keyframes bounceDown{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
 @keyframes countUp{from{opacity:0;transform:scale(.8);}to{opacity:1;transform:scale(1);}}
 .gold-text{background:linear-gradient(135deg,#fef08a,#fbbf24,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .gold-btn{background:linear-gradient(135deg,#fbbf24,#d97706);color:#09090b;border:none;padding:.8rem 2.1rem;border-radius:100px;font-family:'Cinzel',serif;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(251,191,36,.28);letter-spacing:.06em;white-space:nowrap;}
@@ -169,6 +171,159 @@ function MsgBox({ msg }) {
   return <div className={`msg-box ${cls}`}>{msg}</div>;
 }
 
+// ─── PWA Install Hook ────────────────────────────────────────────────────────
+function usePWAInstall() {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone) {
+      setIsInstalled(true);
+      return;
+    }
+
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => setIsInstalled(true));
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const install = async () => {
+    if (!deferredPrompt) return false;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    return outcome === "accepted";
+  };
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const canInstallNative = !!deferredPrompt;
+
+  return { install, canInstallNative, isIOS, isInstalled };
+}
+
+// ─── iOS Install Overlay ─────────────────────────────────────────────────────
+function IOSInstallOverlay({ onClose }) {
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(0,0,0,.82)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1.5rem" }} onClick={onClose}>
+      <div className="card" style={{ width:"100%", maxWidth:"380px", padding:"2.25rem 2rem", textAlign:"center", border:"1px solid rgba(251,191,36,.3)", boxShadow:"0 0 60px rgba(251,191,36,.12)" }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize:"2.5rem", marginBottom:"1rem" }}>📲</div>
+        <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1.2rem", fontWeight:800, color:GOLD, marginBottom:".5rem" }}>Install StepQuest</h2>
+        <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".95rem", color:"#a1a1aa", lineHeight:1.7, marginBottom:"1.75rem" }}>Add StepQuest to your home screen in 3 taps:</p>
+
+        {[
+          { step:"1", icon:"⬆️", text:<>Tap the <strong style={{ color:"#f4f4f5" }}>Share</strong> button <span style={{ fontSize:".85rem", opacity:.7 }}>(bottom of Safari)</span></> },
+          { step:"2", icon:"➕", text:<>Scroll down and tap <strong style={{ color:"#f4f4f5" }}>"Add to Home Screen"</strong></> },
+          { step:"3", icon:"✅", text:<>Tap <strong style={{ color:"#f4f4f5" }}>"Add"</strong> — done!</> },
+        ].map((s, i) => (
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:"1rem", textAlign:"left", marginBottom:"1.1rem", padding:".85rem 1rem", background:"rgba(0,0,0,.35)", borderRadius:"12px", border:"1px solid rgba(255,255,255,.06)" }}>
+            <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:"linear-gradient(135deg,rgba(251,191,36,.2),rgba(217,119,6,.1))", border:"1px solid rgba(251,191,36,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <span style={{ fontFamily:"Cinzel,serif", fontSize:".85rem", fontWeight:800, color:GOLD }}>{s.step}</span>
+            </div>
+            <div>
+              <span style={{ fontSize:"1.15rem", marginRight:".5rem" }}>{s.icon}</span>
+              <span style={{ fontFamily:"Crimson Pro,serif", fontSize:".95rem", color:"#d4d4d8", lineHeight:1.6 }}>{s.text}</span>
+            </div>
+          </div>
+        ))}
+
+        <div style={{ marginTop:".5rem", animation:"bounceDown 1.5s ease-in-out infinite" }}>
+          <span style={{ fontSize:"1.5rem" }}>👇</span>
+        </div>
+        <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".82rem", color:"#52525b", marginTop:".75rem" }}>Look for the Share icon at the bottom of Safari</p>
+
+        <button className="ghost-btn" style={{ marginTop:"1.5rem", width:"100%", padding:".75rem" }} onClick={onClose}>Got It</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Install CTA Section ─────────────────────────────────────────────────────
+function InstallSection() {
+  const { install, canInstallNative, isIOS, isInstalled } = usePWAInstall();
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [justInstalled, setJustInstalled] = useState(false);
+
+  if (isInstalled) {
+    return (
+      <div className="card" style={{ padding:"2.5rem", textAlign:"center", marginTop:"2.5rem", border:"1px solid rgba(74,222,128,.25)", background:"linear-gradient(135deg,rgba(74,222,128,.06),rgba(15,23,42,.8))" }}>
+        <div style={{ fontSize:"2.5rem", marginBottom:".85rem" }}>✅</div>
+        <h3 style={{ fontFamily:"Cinzel,serif", fontSize:"1.15rem", fontWeight:700, color:"#4ade80", marginBottom:".5rem" }}>StepQuest Installed</h3>
+        <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1rem", color:"#a1a1aa", lineHeight:1.7 }}>You're all set! Launch StepQuest from your home screen.</p>
+      </div>
+    );
+  }
+
+  const handleInstall = async () => {
+    if (canInstallNative) {
+      const accepted = await install();
+      if (accepted) setJustInstalled(true);
+    } else if (isIOS) {
+      setShowIOSGuide(true);
+    }
+  };
+
+  return (
+    <>
+      {showIOSGuide && <IOSInstallOverlay onClose={() => setShowIOSGuide(false)} />}
+      <div className="card" style={{
+        padding:"2.75rem 2.25rem",
+        marginTop:"2.5rem",
+        textAlign:"center",
+        border:"1px solid rgba(251,191,36,.25)",
+        background:"linear-gradient(135deg,rgba(251,191,36,.06),rgba(15,23,42,.85))",
+        boxShadow:"0 0 40px rgba(251,191,36,.08)",
+        position:"relative",
+        overflow:"hidden"
+      }}>
+        {/* Decorative glow */}
+        <div style={{ position:"absolute", top:"-60px", left:"50%", transform:"translateX(-50%)", width:"300px", height:"200px", borderRadius:"50%", background:"radial-gradient(circle,rgba(251,191,36,.1) 0%,transparent 70%)", pointerEvents:"none" }} />
+
+        <div style={{ position:"relative", zIndex:1 }}>
+          <div style={{ fontSize:"2.75rem", marginBottom:"1rem", animation:"floatAnim 3s ease-in-out infinite" }}>📲</div>
+          <h3 style={{ fontFamily:"Cinzel,serif", fontSize:"1.35rem", fontWeight:800, marginBottom:".6rem" }}>
+            <span className="gold-text">Install StepQuest</span>
+          </h3>
+          <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1.05rem", color:"#a1a1aa", lineHeight:1.75, maxWidth:"440px", margin:"0 auto 1.75rem" }}>
+            Add StepQuest to your home screen for instant access — no app store needed. Full-screen, offline-ready, just like a native app.
+          </p>
+
+          <button
+            className="gold-btn"
+            onClick={handleInstall}
+            style={{
+              fontSize:"1.05rem",
+              padding:"1rem 2.75rem",
+              animation:"pulseGlow 3s infinite",
+              background: "linear-gradient(135deg,#fbbf24,#d97706)",
+            }}
+          >
+            {isIOS ? "📲 Install on iPhone" : "📲 Install App"}
+          </button>
+
+          <div style={{ display:"flex", justifyContent:"center", gap:"1.5rem", marginTop:"1.5rem", flexWrap:"wrap" }}>
+            {[
+              { icon:"⚡", text:"Instant Launch" },
+              { icon:"📴", text:"Works Offline" },
+              { icon:"🖥️", text:"Full Screen" },
+            ].map((b, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:".4rem" }}>
+                <span style={{ fontSize:".9rem" }}>{b.icon}</span>
+                <span style={{ fontFamily:"Crimson Pro,serif", fontSize:".88rem", color:"#71717a" }}>{b.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 function Nav({ page, setPage, mob, setMob }) {
   const { session, logout } = useAuth();
@@ -199,6 +354,15 @@ function Nav({ page, setPage, mob, setMob }) {
           <>
             <button className="ghost-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Log In</button>
             <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Get Started</button>
+            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
+              const ua = navigator.userAgent;
+              const iOS = /iPad|iPhone|iPod/.test(ua);
+              if (iOS) {
+                alert("Install StepQuest on iPhone:\n\n1. Make sure you're in Safari\n2. Tap the Share button (bottom center)\n3. Scroll down and tap 'Add to Home Screen'\n4. Tap Add\n\nDone! StepQuest will appear on your home screen.");
+              } else {
+                alert("Install StepQuest:\n\nOn Android/Chrome:\n• Tap the menu (3 dots) in Chrome\n• Tap 'Install app' or 'Add to Home Screen'\n\nOn iPhone:\n• Open in Safari\n• Tap Share → Add to Home Screen");
+              }
+            }}>📲 Install</button>
           </>
         )}
         <button className="mob-t" style={{ display:"none", flexDirection:"column", gap:"5px", background:"none", border:"none", cursor:"pointer", padding:".25rem" }} onClick={() => setMob(!mob)}>
@@ -212,7 +376,12 @@ function Nav({ page, setPage, mob, setMob }) {
             {session
               ? <button className="danger-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { logout(); setMob(false); }}>Log Out</button>
               : <><button className="ghost-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Log In</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button></>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
+                    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    alert(iOS ? "Install StepQuest:\n\n1. Make sure you're in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add" : "Install StepQuest:\n\nTap menu → Install app / Add to Home Screen");
+                    setMob(false);
+                  }}>📲 Install</button></>
             }
           </div>
         </div>
@@ -526,6 +695,11 @@ function DashboardPage({ setPage }) {
 // ─── Features ─────────────────────────────────────────────────────────────────
 function FeaturesPage({ setPage }) {
   const { session } = useAuth();
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+
+  const isIOS = typeof navigator !== "undefined" && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+  const isStandalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
+
   const details = [
     { icon:"🥾", title:"Step Tracking & XP Engine",  color:"#4ade80", points:["1 XP earned per every 10 steps","Syncs with Apple Health & Google Fit","Real-time updates throughout the day","2 skill points earned on every level-up"],       desc:"The foundation of StepQuest is a seamless step engine. Every stride converts to experience that grows your hero, unlocks quests, and powers boss battles." },
     { icon:"📜", title:"Tavern Bounty Board",         color:"#fbbf24", points:["Five tiers: Easy, Normal, Hard, Epic, Mythic","Named bounties from 1,500 to 12,000 steps","AI Quest Master forges fully custom quests","Loot drops improve with difficulty"], desc:"From Clear the Thicket (1,500 steps) to Dragon's Errand (12,000 steps), the Bounty Board always has a challenge for your current level. Mythic quests are for the truly devoted." },
@@ -543,6 +717,71 @@ function FeaturesPage({ setPage }) {
         <h1 style={{ fontFamily:"Cinzel,serif", fontSize:"2.9rem", fontWeight:900, marginBottom:".9rem" }}>Everything in <span className="gold-text">Your Arsenal</span></h1>
         <p style={{ fontSize:"1.12rem", color:"#a1a1aa", fontFamily:"Crimson Pro,serif", lineHeight:1.78, maxWidth:"520px", margin:"0 auto" }}>StepQuest is engineered feature-by-feature to reward every dimension of your fitness journey.</p>
       </div>
+
+      {/* ── PWA INSTALL SECTION ── */}
+      {showIOSGuide && (
+        <div style={{ position:"fixed", inset:0, zIndex:2000, background:"rgba(0,0,0,.82)", backdropFilter:"blur(12px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1.5rem" }} onClick={() => setShowIOSGuide(false)}>
+          <div className="card" style={{ width:"100%", maxWidth:"380px", padding:"2.25rem 2rem", textAlign:"center", border:"1px solid rgba(251,191,36,.3)", boxShadow:"0 0 60px rgba(251,191,36,.12)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:"2.5rem", marginBottom:"1rem" }}>📲</div>
+            <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1.2rem", fontWeight:800, color:GOLD, marginBottom:".5rem" }}>Install StepQuest</h2>
+            <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".95rem", color:"#a1a1aa", lineHeight:1.7, marginBottom:"1.75rem" }}>Add StepQuest to your home screen in 3 taps:</p>
+            {[
+              { step:"1", icon:"⬆️", label:"Tap the Share button (bottom of Safari)" },
+              { step:"2", icon:"➕", label:'Scroll down, tap "Add to Home Screen"' },
+              { step:"3", icon:"✅", label:'Tap "Add" — done!' },
+            ].map((s, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:"1rem", textAlign:"left", marginBottom:"1.1rem", padding:".85rem 1rem", background:"rgba(0,0,0,.35)", borderRadius:"12px", border:"1px solid rgba(255,255,255,.06)" }}>
+                <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:"linear-gradient(135deg,rgba(251,191,36,.2),rgba(217,119,6,.1))", border:"1px solid rgba(251,191,36,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <span style={{ fontFamily:"Cinzel,serif", fontSize:".85rem", fontWeight:800, color:GOLD }}>{s.step}</span>
+                </div>
+                <span style={{ fontFamily:"Crimson Pro,serif", fontSize:".95rem", color:"#d4d4d8", lineHeight:1.6 }}>{s.icon} {s.label}</span>
+              </div>
+            ))}
+            <div style={{ marginTop:".5rem", animation:"bounceDown 1.5s ease-in-out infinite" }}><span style={{ fontSize:"1.5rem" }}>👇</span></div>
+            <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".82rem", color:"#52525b", marginTop:".75rem" }}>Look for the Share icon at the bottom of Safari</p>
+            <button className="ghost-btn" style={{ marginTop:"1.5rem", width:"100%", padding:".75rem" }} onClick={() => setShowIOSGuide(false)}>Got It</button>
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{
+        padding:"2.75rem 2.25rem", marginBottom:"2rem", textAlign:"center",
+        border:"1px solid rgba(251,191,36,.25)",
+        background:"linear-gradient(135deg,rgba(251,191,36,.06),rgba(15,23,42,.85))",
+        boxShadow:"0 0 40px rgba(251,191,36,.08)",
+        position:"relative", overflow:"hidden"
+      }}>
+        <div style={{ position:"absolute", top:"-60px", left:"50%", transform:"translateX(-50%)", width:"300px", height:"200px", borderRadius:"50%", background:"radial-gradient(circle,rgba(251,191,36,.1) 0%,transparent 70%)", pointerEvents:"none" }} />
+        <div style={{ position:"relative", zIndex:1 }}>
+          <div style={{ fontSize:"2.75rem", marginBottom:"1rem", animation:"floatAnim 3s ease-in-out infinite" }}>📲</div>
+          <h3 style={{ fontFamily:"Cinzel,serif", fontSize:"1.35rem", fontWeight:800, marginBottom:".6rem" }}>
+            <span className="gold-text">{isStandalone ? "StepQuest Installed" : "Install StepQuest"}</span>
+          </h3>
+          <p style={{ fontFamily:"Crimson Pro,serif", fontSize:"1.05rem", color:"#a1a1aa", lineHeight:1.75, maxWidth:"440px", margin:"0 auto 1.75rem" }}>
+            {isStandalone
+              ? "You're all set! Launch StepQuest from your home screen."
+              : "Add StepQuest to your home screen for instant access — no app store needed. Full-screen, offline-ready, just like a native app."}
+          </p>
+          {!isStandalone && (
+            <button className="gold-btn" onClick={() => {
+              if (isIOS) { setShowIOSGuide(true); }
+              else { alert("Open this page in Safari on your iPhone, or Chrome on Android, to install."); }
+            }} style={{ fontSize:"1.05rem", padding:"1rem 2.75rem", animation:"pulseGlow 3s infinite" }}>
+              {isIOS ? "📲 Install on iPhone" : "📲 Install App"}
+            </button>
+          )}
+          <div style={{ display:"flex", justifyContent:"center", gap:"1.5rem", marginTop:"1.5rem", flexWrap:"wrap" }}>
+            {[["⚡","Instant Launch"],["📴","Works Offline"],["🖥️","Full Screen"]].map(([icon,text],i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:".4rem" }}>
+                <span style={{ fontSize:".9rem" }}>{icon}</span>
+                <span style={{ fontFamily:"Crimson Pro,serif", fontSize:".88rem", color:"#71717a" }}>{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* ── END PWA INSTALL ── */}
+
       {details.map((f,i) => (
         <div key={i} className="card" style={{ padding:"2.25rem", marginBottom:"1.35rem" }}>
           <div className="feat-det" style={{ display:"flex", gap:"2.5rem", alignItems:"flex-start" }}>
@@ -844,6 +1083,31 @@ function LoginPage({ setPage }) {
   const [loading,setLoading]=useState(false);
   const [msg,setMsg]=useState("");
   const [forgot,setForgot]=useState(false);
+  const [resettingPw, setResettingPw] = useState(false);
+  const [newPw, setNewPw] = useState("");
+
+  // Detect if user arrived via a password reset link
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setResettingPw(true);
+        setForgot(false);
+        setMsg("ℹ️ Enter your new password below.");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const updatePassword = async () => {
+    if (!newPw || newPw.length < 6) { setMsg("❌ Password must be at least 6 characters."); return; }
+    setLoading(true); setMsg("");
+    const { error } = await supabase.auth.updateUser({ password: newPw });
+    setLoading(false);
+    if (error) { setMsg("❌ " + error.message); return; }
+    setMsg("✅ Password updated! Redirecting to dashboard…");
+    setResettingPw(false);
+    setTimeout(() => setPage("dashboard"), 1500);
+  };
 
   const submit = async () => {
     if (!email || (!forgot && !pw)) { setMsg("❌ Please fill in all fields."); return; }
@@ -852,7 +1116,7 @@ function LoginPage({ setPage }) {
     if (forgot) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
       setLoading(false);
-      setMsg(error ? "❌ " + error.message : "✅ Reset link sent! Check your inbox.");
+      setMsg(error ? "❌ " + error.message : "✅ Reset link sent! Check your inbox (and spam folder).");
       return;
     }
     if (mode === "login") {
@@ -889,6 +1153,25 @@ function LoginPage({ setPage }) {
         )}
 
         <div className="card" style={{ padding:"1.85rem" }}>
+          {resettingPw ? (
+            <>
+              <div style={{ marginBottom:"1.25rem" }}>
+                <h2 style={{ fontFamily:"Cinzel,serif", fontSize:"1.1rem", fontWeight:700, color:GOLD }}>Set New Password</h2>
+                <p style={{ fontFamily:"Crimson Pro,serif", fontSize:".92rem", color:"#a1a1aa", marginTop:".5rem" }}>Choose a strong new password for your account.</p>
+              </div>
+              <MsgBox msg={msg} />
+              <div style={{ display:"flex", flexDirection:"column", gap:".9rem" }}>
+                <div>
+                  <label style={{ fontFamily:"Cinzel,serif", fontSize:".72rem", letterSpacing:".1em", color:GOLD, display:"block", marginBottom:".45rem" }}>NEW PASSWORD</label>
+                  <input type="password" placeholder="••••••••" value={newPw} onChange={e=>setNewPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&updatePassword()} />
+                </div>
+                <button className="gold-btn" style={{ width:"100%", padding:".95rem", fontSize:".98rem", marginTop:".35rem" }} onClick={updatePassword} disabled={loading}>
+                  {loading?"⏳ Updating…":"🔒 Update Password"}
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
           {forgot && (
             <div style={{ marginBottom:"1.25rem" }}>
               <button onClick={()=>{setForgot(false);setMsg("");}} style={{ background:"none", border:"none", color:"#71717a", cursor:"pointer", fontFamily:"Cinzel,serif", fontSize:".78rem", letterSpacing:".08em" }}>← Back to login</button>
@@ -918,9 +1201,11 @@ function LoginPage({ setPage }) {
               {loading?"⏳ One moment…":forgot?"📧 Send Reset Link":mode==="login"?"⚔️ Enter the Realm":"🌟 Join the Quest"}
             </button>
           </div>
+          </>
+          )}
         </div>
 
-        {!forgot && (
+        {!forgot && !resettingPw && (
           <p style={{ textAlign:"center", fontFamily:"Crimson Pro,serif", fontSize:".93rem", color:"#52525b", marginTop:"1.35rem" }}>
             {mode==="login"?"New hero? ":"Already adventuring? "}
             <button onClick={()=>{setMode(mode==="login"?"signup":"login");setMsg("");}} style={{ background:"none", border:"none", color:GOLD, cursor:"pointer", fontFamily:"Crimson Pro,serif", fontSize:".93rem", fontWeight:600 }}>
