@@ -1272,9 +1272,13 @@ export default function App() {
       setSession(data.session);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (!s) setPage("home");
+      if (_event === "PASSWORD_RECOVERY") {
+        setPage("login");
+      } else if (!s) {
+        setPage("home");
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
