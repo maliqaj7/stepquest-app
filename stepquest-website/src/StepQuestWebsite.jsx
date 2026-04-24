@@ -1256,7 +1256,9 @@ export default function App() {
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash && hash.includes("type=recovery")) {
+    const search = window.location.search;
+    const full = hash + search + window.location.href;
+    if (full.includes("type=recovery") || full.includes("type%3Drecovery")) {
       setRecoveryMode(true);
       setPage("login");
     }
