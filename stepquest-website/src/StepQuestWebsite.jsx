@@ -293,12 +293,18 @@ function InstallSection() {
             Add StepQuest to your home screen for instant access — no app store needed. Full-screen, offline-ready, just like a native app.
           </p>
 
-<button className="gold-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => {
-              window.location.href = "/StepQuest.apk";
-            }}>🤖 Android</button>
-            <button className="gold-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
-              alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap the Share button (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add\n\nDone!");
-            }}>🍎 iPhone</button>
+          <button
+            className="gold-btn"
+            onClick={handleInstall}
+            style={{
+              fontSize:"1.05rem",
+              padding:"1rem 2.75rem",
+              animation:"pulseGlow 3s infinite",
+              background: "linear-gradient(135deg,#fbbf24,#d97706)",
+            }}
+          >
+            {isIOS ? "📲 Install on iPhone" : "📲 Install App"}
+          </button>
 
           <div style={{ display:"flex", justifyContent:"center", gap:"1.5rem", marginTop:"1.5rem", flexWrap:"wrap" }}>
             {[
@@ -348,15 +354,12 @@ function Nav({ page, setPage, mob, setMob }) {
           <>
             <button className="ghost-btn nav-d" style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Log In</button>
             <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem" }} onClick={() => setPage("login")}>Get Started</button>
+            <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => {
+              window.location.href = "/StepQuest.apk";
+            }}>🤖 Android</button>
             <button className="gold-btn nav-d"  style={{ padding:".45rem 1.15rem", fontSize:".78rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
-              const ua = navigator.userAgent;
-              const iOS = /iPad|iPhone|iPod/.test(ua);
-              if (iOS) {
-                alert("Install StepQuest on iPhone:\n\n1. Make sure you're in Safari\n2. Tap the Share button (bottom center)\n3. Scroll down and tap 'Add to Home Screen'\n4. Tap Add\n\nDone! StepQuest will appear on your home screen.");
-              } else {
-                alert("Install StepQuest:\n\nOn Android/Chrome:\n• Tap the menu (3 dots) in Chrome\n• Tap 'Install app' or 'Add to Home Screen'\n\nOn iPhone:\n• Open in Safari\n• Tap Share → Add to Home Screen");
-              }
-            }}>📲 Install</button>
+              alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap the Share button (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add\n\nDone!");
+            }}>🍎 iPhone</button>
           </>
         )}
         <button className="mob-t" style={{ display:"none", flexDirection:"column", gap:"5px", background:"none", border:"none", cursor:"pointer", padding:".25rem" }} onClick={() => setMob(!mob)}>
@@ -371,11 +374,8 @@ function Nav({ page, setPage, mob, setMob }) {
               ? <button className="danger-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { logout(); setMob(false); }}>Log Out</button>
               : <><button className="ghost-btn" style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Log In</button>
                   <button className="gold-btn"  style={{ flex:1, padding:".7rem" }} onClick={() => { setPage("login"); setMob(false); }}>Get Started</button>
-                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => {
-                    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                    alert(iOS ? "Install StepQuest:\n\n1. Make sure you're in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add" : "Install StepQuest:\n\nTap menu → Install app / Add to Home Screen");
-                    setMob(false);
-                  }}>📲 Install</button></>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#4ade80,#16a34a)" }} onClick={() => { window.location.href = "/StepQuest.apk"; setMob(false); }}>🤖 Android</button>
+                  <button className="gold-btn"  style={{ flex:1, padding:".7rem", background:"linear-gradient(135deg,#22d3ee,#0284c7)" }} onClick={() => { alert("Install StepQuest on iPhone:\n\n1. Open stepquest-virid.vercel.app in Safari\n2. Tap Share (bottom center)\n3. Tap 'Add to Home Screen'\n4. Tap Add"); setMob(false); }}>🍎 iPhone</button></>
             }
           </div>
         </div>
@@ -1266,13 +1266,9 @@ export default function App() {
       setSession(data.session);
       setAuthLoading(false);
     });
-const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (_event === "PASSWORD_RECOVERY") {
-        setPage("login");
-      } else if (!s) {
-        setPage("home");
-      }
+      if (!s) setPage("home");
     });
     return () => subscription.unsubscribe();
   }, []);
