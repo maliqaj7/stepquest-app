@@ -131,5 +131,5 @@ This project was developed for **Year 4 at Atlantic Technological University**. 
 ---
 
 <p align="center">
-  Developed by <strong>Maliq & Adrian </strong> and the StepQuest Team.
+  Developed by <strong>Maliq & Adrian </strong> 
 </p>
